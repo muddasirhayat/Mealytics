@@ -45,3 +45,6 @@ app-example
 
 # local build artifacts
 /builds
+
+# USDA CSV/zip used only to generate data/foods.json (do not commit)
+tools/usda-build/raw/

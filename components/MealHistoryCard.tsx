@@ -58,7 +58,8 @@ export const MealHistoryCard = ({ meal, onDelete }: MealHistoryCardProps) => {
       <Text style={styles.foodsTitle}>Foods:</Text>
       {meal.foods.map((food, index) => (
         <Text key={`${food.id}-${index}`} style={styles.foodItem} numberOfLines={1}>
-          • {food.name}
+          • {food.name} ({Math.round((food.servingSize ?? 100) * 10) / 10}
+          {food.servingUnit || 'g'})
         </Text>
       ))}
     </View>

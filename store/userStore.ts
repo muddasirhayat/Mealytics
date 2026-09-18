@@ -57,12 +57,14 @@ const calculateGoals = (profile: UserProfile): UserGoals => {
   const targetProtein = Math.round((targetCalories * MACRO_SPLIT.PROTEIN) / 4);
   const targetCarbs = Math.round((targetCalories * MACRO_SPLIT.CARBS) / 4);
   const targetFat = Math.round((targetCalories * MACRO_SPLIT.FAT) / 9);
+  const targetFiber = Math.max(20, Math.round((targetCalories / 1000) * 14));
 
   return {
     targetCalories,
     targetProtein,
     targetCarbs,
     targetFat,
+    targetFiber,
     bmi: Number(bmi.toFixed(1)),
   };
 };

@@ -236,7 +236,7 @@ export default function ProfileScreen() {
                 🔥 {goals.targetCalories} kcal / day
               </Text>
               <Text style={styles.bmiMacroLine}>
-                P {goals.targetProtein}g  ·  C {goals.targetCarbs}g  ·  F {goals.targetFat}g
+                P {goals.targetProtein}g  ·  C {goals.targetCarbs}g  ·  F {goals.targetFat}g  ·  Fiber {goals.targetFiber}g
               </Text>
             </View>
           </View>

@@ -1,8 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { Food } from '@/types/food';
-import { foodCache } from '@/services/food/foodCache';
-import { searchCommonFoods } from '@/services/food/commonFoods';
-import { searchRemoteFoods } from '@/services/food/searchFoods';
+import { searchOfflineFoods, searchRemoteFoods } from '@/services/food/searchFoods';
 
 export const useFoodSearch = () => {
   const [query, setQuery] = useState('');
@@ -24,36 +22,31 @@ export const useFoodSearch = () => {
       return;
     }
 
-    const localMatches = searchCommonFoods(trimmed);
-    foodCache.putMany(localMatches);
+    const localMatches = searchOfflineFoods(trimmed);
     setResults(localMatches);
     setError(null);
-    setIsLoading(true);
 
-    if (trimmed.length < 2) {
+    if (localMatches.length > 0 || trimmed.length < 2) {
       setIsLoading(false);
       return;
     }
 
+    setIsLoading(true);
+
     try {
-      const merged = await searchRemoteFoods(trimmed, localMatches);
+      const remote = await searchRemoteFoods(trimmed);
       if (requestId !== requestIdRef.current) {
         return;
       }
-      setResults(merged);
+      setResults(remote);
       setError(null);
       setIsLoading(false);
     } catch (err) {
       if (requestId !== requestIdRef.current) {
         return;
       }
-      if (localMatches.length > 0) {
-        setResults(localMatches);
-        setError(null);
-      } else {
-        setError(err instanceof Error ? err.message : 'Could not search foods. Please try again.');
-        setResults([]);
-      }
+      setError(err instanceof Error ? err.message : 'Could not search foods. Please try again.');
+      setResults([]);
       setIsLoading(false);
     }
   }, []);

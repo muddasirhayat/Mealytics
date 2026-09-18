@@ -19,5 +19,6 @@ export interface UserGoals {
   targetProtein: number; // in grams
   targetCarbs: number;   // in grams
   targetFat: number;     // in grams
+  targetFiber: number;   // in grams
   bmi: number;
 }

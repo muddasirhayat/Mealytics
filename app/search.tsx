@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, FlatList, StyleSheet, KeyboardAvoidingView, Platform, Text } from 'react-native';
+import { View, FlatList, StyleSheet, KeyboardAvoidingView, Platform, Text, TouchableOpacity } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useFoodSearch } from '@/hooks/useFoodSearch';
 import { SearchBar } from '@/components/SearchBar';
@@ -8,9 +8,11 @@ import { LoadingState, ErrorState, EmptyState } from '@/components/StateIndicato
 import { DraftMealBanner } from '@/components/DraftMealBanner';
 import { useMealStore } from '@/store/mealStore';
 import { isMealSlot, getMealSlotLabel } from '@/utils/mealSlot';
+import { Ionicons } from '@expo/vector-icons';
 import { colors } from '@/theme/colors';
 import { spacing } from '@/theme/spacing';
 import { typography } from '@/theme/typography';
+import { radius } from '@/theme/radius';
 import { Food } from '@/types/food';
 
 export default function SearchScreen() {
@@ -41,14 +43,14 @@ export default function SearchScreen() {
     }
 
     if (!isLoading && query.length > 0 && results.length === 0) {
-      return <EmptyState message="No foods matched your search." />;
+      return <EmptyState message="No foods matched. Try another name, or add a custom food above." />;
     }
     
     if (query.length === 0) {
       return (
         <EmptyState 
           icon="nutrition-outline" 
-          message="Search for an ingredient, branded food, or meal to see its nutrition info." 
+          message="Search for an ingredient, branded food, or meal — or add one manually." 
         />
       );
     }
@@ -80,6 +82,16 @@ export default function SearchScreen() {
           placeholder="Search foods (e.g. Apple, Chicken)"
         />
         <Text style={styles.slotHint}>Adding to {getMealSlotLabel(draftSlot)}</Text>
+        <TouchableOpacity
+          style={styles.customButton}
+          onPress={() => router.push('/food/custom')}
+          activeOpacity={0.8}
+          accessibilityRole="button"
+          accessibilityLabel="Add a custom food manually"
+        >
+          <Ionicons name="create-outline" size={16} color={colors.primaryDark} />
+          <Text style={styles.customButtonText}>Add custom food</Text>
+        </TouchableOpacity>
       </View>
       <View style={styles.bannerWrap}>
         <DraftMealBanner />
@@ -108,6 +120,22 @@ const styles = StyleSheet.create({
     color: colors.primaryDark,
     fontWeight: '700',
     marginTop: spacing.sm,
+  },
+  customButton: {
+    marginTop: spacing.sm,
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: colors.primaryLight,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 6,
+    borderRadius: radius.round,
+  },
+  customButtonText: {
+    ...typography.caption,
+    fontWeight: '700',
+    color: colors.primaryDark,
   },
   bannerWrap: {
     paddingHorizontal: spacing.md,

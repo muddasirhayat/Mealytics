@@ -28,6 +28,10 @@ export const FoodCard = ({ food, onPress }: FoodCardProps) => {
         <View style={styles.caloriesContainer}>
           <Text style={styles.calories}>{Math.round(food.calories)}</Text>
           <Text style={styles.kcalText}>kcal</Text>
+          <Text style={styles.servingText}>
+            per {Math.round(food.servingSize ?? 100)}
+            {food.servingUnit || 'g'}
+          </Text>
         </View>
       </View>
       
@@ -87,6 +91,11 @@ const styles = StyleSheet.create({
   kcalText: {
     ...typography.caption,
     color: colors.textMuted,
+  },
+  servingText: {
+    ...typography.caption,
+    color: colors.textMuted,
+    marginTop: 2,
   },
   macros: {
     flexDirection: 'row',

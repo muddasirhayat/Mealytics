@@ -75,9 +75,10 @@ export default function HomeScreen() {
       acc.protein += meal.totalProtein;
       acc.carbs += meal.totalCarbohydrates;
       acc.fat += meal.totalFat;
+      acc.fiber += meal.foods.reduce((sum, food) => sum + (food.fiber ?? 0), 0);
       return acc;
     },
-    { calories: 0, protein: 0, carbs: 0, fat: 0 }
+    { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 }
   );
 
   return (
@@ -139,9 +140,11 @@ export default function HomeScreen() {
           protein={dailyTotals.protein}
           carbs={dailyTotals.carbs}
           fat={dailyTotals.fat}
+          fiber={dailyTotals.fiber}
           targetProtein={goals?.targetProtein ?? 150}
           targetCarbs={goals?.targetCarbs ?? 200}
           targetFat={goals?.targetFat ?? 65}
+          targetFiber={goals?.targetFiber ?? 28}
         />
       </View>
 

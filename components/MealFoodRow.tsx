@@ -17,6 +17,10 @@ export const MealFoodRow = ({ food, onRemove }: MealFoodRowProps) => {
     <View style={styles.container}>
       <View style={styles.infoContainer}>
         <Text style={styles.name} numberOfLines={1}>{food.name}</Text>
+        <Text style={styles.serving}>
+          {Math.round((food.servingSize ?? 100) * 10) / 10}
+          {food.servingUnit || 'g'} serving
+        </Text>
         <Text style={styles.details}>
           {Math.round(food.calories)} kcal • {Math.round(food.protein)}g P • {Math.round(food.carbohydrates)}g C • {Math.round(food.fat)}g F
         </Text>
@@ -46,6 +50,12 @@ const styles = StyleSheet.create({
   name: {
     ...typography.bodyMedium,
     color: colors.text,
+  },
+  serving: {
+    ...typography.caption,
+    color: colors.primaryDark,
+    fontWeight: '700',
+    marginTop: 2,
   },
   details: {
     ...typography.caption,

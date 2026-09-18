@@ -7,7 +7,7 @@ import { foodCache } from '@/services/food/foodCache';
 import { Food } from '@/types/food';
 import { LoadingState, ErrorState } from '@/components/StateIndicators';
 import { NutritionCard } from '@/components/NutritionCard';
-import { QuantitySelector } from '@/components/QuantitySelector';
+import { ServingSizeSelector } from '@/components/ServingSizeSelector';
 import { useMealStore } from '@/store/mealStore';
 import { colors } from '@/theme/colors';
 import { spacing } from '@/theme/spacing';
@@ -15,6 +15,7 @@ import { typography } from '@/theme/typography';
 import { radius } from '@/theme/radius';
 import { Ionicons } from '@expo/vector-icons';
 import { createId } from '@/utils/id';
+import { getBaseServing, getServingMultiplier, scaleFoodNutrition } from '@/utils/nutrition';
 
 export default function FoodDetailsScreen() {
   const params = useLocalSearchParams<{ id: string | string[] }>();
@@ -26,7 +27,7 @@ export default function FoodDetailsScreen() {
   const [food, setFood] = useState<Food | null>(cachedFood ?? null);
   const [isLoading, setIsLoading] = useState(Boolean(id) && !cachedFood);
   const [error, setError] = useState<string | null>(id ? null : 'Food not found.');
-  const [quantity, setQuantity] = useState(1);
+  const [amount, setAmount] = useState(cachedFood ? getBaseServing(cachedFood) : 100);
   const [retryKey, setRetryKey] = useState(0);
 
   const addFoodToMeal = useMealStore((state) => state.addFoodToMeal);
@@ -39,6 +40,7 @@ export default function FoodDetailsScreen() {
     const cached = foodCache.get(id);
     if (cached) {
       setFood(cached);
+      setAmount(getBaseServing(cached));
       setError(null);
       setIsLoading(false);
       return;
@@ -51,6 +53,7 @@ export default function FoodDetailsScreen() {
         const nextFood = await getFoodById(id);
         if (cancelled) return;
         setFood(nextFood);
+        setAmount(getBaseServing(nextFood));
         setError(null);
       } catch (err) {
         if (cancelled) {
@@ -72,23 +75,15 @@ export default function FoodDetailsScreen() {
   }, [id, retryKey]);
 
   const handleAddToMeal = () => {
-    if (!food) return;
+    if (!food || amount <= 0) return;
 
     const calculatedFood: Food = {
-      ...food,
+      ...scaleFoodNutrition(food, amount),
       id: createId(),
-      calories: food.calories * quantity,
-      protein: food.protein * quantity,
-      carbohydrates: food.carbohydrates * quantity,
-      fat: food.fat * quantity,
-      fiber: food.fiber !== undefined ? food.fiber * quantity : undefined,
-      sugar: food.sugar !== undefined ? food.sugar * quantity : undefined,
-      sodium: food.sodium !== undefined ? food.sodium * quantity : undefined,
-      servingSize: (food.servingSize || 1) * quantity,
     };
 
     addFoodToMeal(calculatedFood);
-    Alert.alert('Added to meal', `${food.name} is in your current meal.`, [
+    Alert.alert('Added to meal', `${food.name} (${Math.round(amount * 10) / 10}${food.servingUnit || 'g'}) is in your current meal.`, [
       { text: 'Add more', onPress: () => router.back() },
       { text: 'Review meal', onPress: () => router.replace('/meal/draft') },
     ]);
@@ -111,29 +106,37 @@ export default function FoodDetailsScreen() {
     );
   }
 
+  const baseServing = getBaseServing(food);
+  const unit = food.servingUnit?.trim() || 'g';
+  const multiplier = getServingMultiplier(food, amount);
+
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
           <Text style={styles.title}>{food.name}</Text>
           {food.brand && <Text style={styles.brand}>{food.brand}</Text>}
-          {food.servingSize && food.servingUnit && (
-            <Text style={styles.servingInfo}>
-              Base serving: {food.servingSize}{food.servingUnit}
-            </Text>
-          )}
+          <Text style={styles.servingInfo}>
+            Listed nutrition is per {Math.round(baseServing)}
+            {unit}
+          </Text>
         </View>
 
         <View style={styles.section}>
-          <QuantitySelector
-            quantity={quantity}
-            onChange={setQuantity}
-            label="Servings"
+          <ServingSizeSelector
+            amount={amount}
+            unit={unit}
+            baseAmount={baseServing}
+            onChange={setAmount}
           />
         </View>
 
         <View style={styles.section}>
-          <NutritionCard food={food} multiplier={quantity} />
+          <NutritionCard
+            food={food}
+            multiplier={multiplier}
+            servingLabel={`For ${Math.round(amount * 10) / 10}${unit}`}
+          />
         </View>
       </ScrollView>
 

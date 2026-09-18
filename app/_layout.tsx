@@ -45,6 +45,7 @@ export default function RootLayout() {
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="search" options={{ title: 'Search Food' }} />
         <Stack.Screen name="meal/draft" options={{ title: 'Current Meal' }} />
+        <Stack.Screen name="food/custom" options={{ title: 'Custom food' }} />
         <Stack.Screen name="food/[id]" options={{ title: 'Food Details', presentation: 'modal' }} />
         <Stack.Screen name="+not-found" options={{ title: 'Not found' }} />
       </Stack>

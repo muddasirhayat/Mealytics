@@ -28,6 +28,7 @@ export const colors = {
   protein: '#F43F5E', // Rose
   carbs: '#3B82F6', // Blue
   fat: '#F59E0B', // Amber
+  fiber: '#16A34A',
 };
 
 export type Colors = typeof colors;

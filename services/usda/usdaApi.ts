@@ -3,6 +3,8 @@ import { NetworkError, jsonRequest, withQuery } from '@/services/network/jsonReq
 
 const BASE_URL = 'https://api.nal.usda.gov/fdc/v1';
 const API_KEY = process.env.EXPO_PUBLIC_USDA_API_KEY;
+const SEARCH_TIMEOUT_MS = 4000;
+const DETAILS_TIMEOUT_MS = 4000;
 
 export class UsdaApiError extends NetworkError {
   constructor(message: string, status?: number) {
@@ -19,6 +21,10 @@ const getApiKey = () => {
 };
 
 export const usdaApi = {
+  hasApiKey() {
+    return Boolean(API_KEY);
+  },
+
   async searchFoods(query: string, pageNumber: number = 1): Promise<UsdaFoodSearchResponse> {
     const apiKey = getApiKey();
 
@@ -34,7 +40,7 @@ export const usdaApi = {
         pageSize: '8',
         dataType: 'Foundation,SR Legacy',
       }),
-      8000
+      SEARCH_TIMEOUT_MS
     );
   },
 
@@ -44,7 +50,7 @@ export const usdaApi = {
       withQuery(`${BASE_URL}/food/${encodeURIComponent(fdcId)}`, {
         api_key: apiKey,
       }),
-      10000
+      DETAILS_TIMEOUT_MS
     );
   },
 };

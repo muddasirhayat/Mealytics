@@ -9,14 +9,16 @@ import { typography } from '@/theme/typography';
 interface NutritionCardProps {
   food: Food;
   multiplier?: number;
+  servingLabel?: string;
 }
 
-export const NutritionCard = ({ food, multiplier = 1 }: NutritionCardProps) => {
+export const NutritionCard = ({ food, multiplier = 1, servingLabel }: NutritionCardProps) => {
   const getVal = (val?: number) => Math.round((val || 0) * multiplier);
 
   return (
     <View style={styles.card}>
       <Text style={styles.title}>Nutrition Facts</Text>
+      {servingLabel ? <Text style={styles.servingLabel}>{servingLabel}</Text> : null}
       <View style={styles.divider} />
       
       <View style={styles.row}>
@@ -89,6 +91,11 @@ const styles = StyleSheet.create({
   title: {
     ...typography.title,
     color: colors.text,
+    marginBottom: spacing.xs,
+  },
+  servingLabel: {
+    ...typography.caption,
+    color: colors.textSecondary,
     marginBottom: spacing.xs,
   },
   divider: {

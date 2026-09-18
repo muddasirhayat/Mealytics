@@ -1,6 +1,7 @@
 import { Food } from '@/types/food';
 import { foodCache } from '@/services/food/foodCache';
 import { getCommonFoodById, searchCommonFoods } from '@/services/food/commonFoods';
+import { getLocalFoodById, searchLocalFoods } from '@/services/food/localFoods';
 import { openFoodFactsApi } from '@/services/off/openFoodFactsApi';
 import { usdaApi } from '@/services/usda/usdaApi';
 import { mapUsdaFoodToInternal } from '@/services/usda/usdaMapper';
@@ -15,8 +16,11 @@ const disableUsda = () => {
 };
 
 const mergeFoods = (primary: Food[], secondary: Food[]): Food[] => {
+  const seenIds = new Set(primary.map((food) => food.id));
   const seenNames = new Set(primary.map((food) => food.name.toLowerCase()));
-  const extras = secondary.filter((food) => !seenNames.has(food.name.toLowerCase()));
+  const extras = secondary.filter(
+    (food) => !seenIds.has(food.id) && !seenNames.has(food.name.toLowerCase())
+  );
   return [...primary, ...extras];
 };
 
@@ -27,12 +31,20 @@ const searchUsdaFoods = async (query: string): Promise<Food[]> => {
     .map(mapUsdaFoodToInternal);
 };
 
-export const searchRemoteFoods = async (query: string, localMatches: Food[]): Promise<Food[]> => {
+export const searchOfflineFoods = (query: string): Food[] => {
+  const bundled = searchLocalFoods(query);
+  const common = searchCommonFoods(query);
+  const merged = mergeFoods(bundled, common);
+  foodCache.putMany(merged);
+  return merged;
+};
+
+export const searchRemoteFoods = async (query: string): Promise<Food[]> => {
   try {
     const offFoods = await openFoodFactsApi.searchFoods(query);
     foodCache.putMany(offFoods);
     if (offFoods.length > 0) {
-      return mergeFoods(offFoods, localMatches);
+      return offFoods;
     }
   } catch (offError) {
     if (__DEV__) {
@@ -40,12 +52,12 @@ export const searchRemoteFoods = async (query: string, localMatches: Food[]): Pr
     }
   }
 
-  if (isUsdaEnabled()) {
+  if (isUsdaEnabled() && usdaApi.hasApiKey()) {
     try {
       const usdaFoods = await searchUsdaFoods(query);
       foodCache.putMany(usdaFoods);
       if (usdaFoods.length > 0) {
-        return mergeFoods(usdaFoods, localMatches);
+        return usdaFoods;
       }
     } catch (usdaError) {
       disableUsda();
@@ -55,17 +67,15 @@ export const searchRemoteFoods = async (query: string, localMatches: Food[]): Pr
     }
   }
 
-  if (localMatches.length > 0) {
-    return localMatches;
-  }
-
   throw new Error('Could not search foods. Check your connection and try again.');
 };
 
 export const searchFoods = async (query: string): Promise<Food[]> => {
-  const localMatches = searchCommonFoods(query);
-  foodCache.putMany(localMatches);
-  return searchRemoteFoods(query, localMatches);
+  const localMatches = searchOfflineFoods(query);
+  if (localMatches.length > 0) {
+    return localMatches;
+  }
+  return searchRemoteFoods(query);
 };
 
 export const getFoodById = async (id: string): Promise<Food> => {
@@ -81,6 +91,12 @@ export const getFoodById = async (id: string): Promise<Food> => {
     }
     foodCache.put(localFood);
     return localFood;
+  }
+
+  const bundled = getLocalFoodById(id);
+  if (bundled) {
+    foodCache.put(bundled);
+    return bundled;
   }
 
   if (id.startsWith('off-')) {

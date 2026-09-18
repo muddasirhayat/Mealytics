@@ -9,9 +9,11 @@ interface MacroCardsGridProps {
   protein: number;
   carbs: number;
   fat: number;
+  fiber: number;
   targetProtein?: number;
   targetCarbs?: number;
   targetFat?: number;
+  targetFiber?: number;
 }
 
 interface MacroCardProps {
@@ -52,7 +54,6 @@ const MacroCard = ({
         <Text style={styles.targetText}>/ {targetVal}g</Text>
       </View>
 
-      {/* Progress Track */}
       <View style={styles.track}>
         <View style={[styles.fill, { width: `${percent}%`, backgroundColor: color }]} />
       </View>
@@ -66,45 +67,64 @@ export const MacroCardsGrid = ({
   protein,
   carbs,
   fat,
+  fiber,
   targetProtein = 150,
   targetCarbs = 200,
   targetFat = 65,
+  targetFiber = 28,
 }: MacroCardsGridProps) => {
   return (
     <View style={styles.grid}>
-      <MacroCard
-        title="Protein"
-        emoji="🥩"
-        current={protein}
-        target={targetProtein}
-        color={colors.protein}
-        bgColor="#FFF1F2"
-        borderColor="#FFE4E6"
-      />
-      <MacroCard
-        title="Carbs"
-        emoji="🍞"
-        current={carbs}
-        target={targetCarbs}
-        color={colors.carbs}
-        bgColor="#EFF6FF"
-        borderColor="#DBEAFE"
-      />
-      <MacroCard
-        title="Fat"
-        emoji="🥑"
-        current={fat}
-        target={targetFat}
-        color={colors.fat}
-        bgColor="#FFFBEB"
-        borderColor="#FEF3C7"
-      />
+      <View style={styles.row}>
+        <MacroCard
+          title="Protein"
+          emoji="🥩"
+          current={protein}
+          target={targetProtein}
+          color={colors.protein}
+          bgColor="#FFF1F2"
+          borderColor="#FFE4E6"
+        />
+        <MacroCard
+          title="Carbs"
+          emoji="🍞"
+          current={carbs}
+          target={targetCarbs}
+          color={colors.carbs}
+          bgColor="#EFF6FF"
+          borderColor="#DBEAFE"
+        />
+      </View>
+      <View style={styles.row}>
+        <MacroCard
+          title="Fat"
+          emoji="🥑"
+          current={fat}
+          target={targetFat}
+          color={colors.fat}
+          bgColor="#FFFBEB"
+          borderColor="#FEF3C7"
+        />
+        <MacroCard
+          title="Fiber"
+          emoji="🥦"
+          current={fiber}
+          target={targetFiber}
+          color={colors.fiber}
+          bgColor="#ECFDF5"
+          borderColor="#A7F3D0"
+        />
+      </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   grid: {
+    width: '100%',
+    gap: spacing.sm,
+  },
+  row: {
     flexDirection: 'row',
     gap: spacing.sm,
     width: '100%',
