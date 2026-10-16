@@ -25,6 +25,8 @@ export interface Food {
   // Serving information
   servingSize?: number;
   servingUnit?: string;
+  /** Human-readable serving, e.g. "1 bowl (400g)". Prefer this when present. */
+  servingLabel?: string;
   
   // All raw nutrients mapped nicely
   nutrients: Nutrient[];

@@ -1,34 +1,36 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useRef, useState } from 'react';
+import { StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import { QuickMeal } from '@/types/quickMeal';
 import { Food } from '@/types/food';
 import { useMealStore } from '@/store/mealStore';
 import { createId } from '@/utils/id';
 import { colors } from '@/theme/colors';
-import { spacing } from '@/theme/spacing';
+import { fonts } from '@/theme/fonts';
 import { typography } from '@/theme/typography';
-import { radius } from '@/theme/radius';
+import { RaisedCard, IconSquare, MacroDots, PlusButton } from '@/components/ui';
+import { useToast } from '@/components/ui/Toast';
 
-interface QuickMealCardProps {
+const iconForTags = (tags: string[]): keyof typeof Feather.glyphMap => {
+  if (tags.includes('high-protein')) return 'zap';
+  if (tags.includes('vegan')) return 'sun';
+  if (tags.includes('low-carb')) return 'minus';
+  return 'coffee';
+};
+
+type QuickMealCardProps = {
   meal: QuickMeal;
-  index: number;
-}
+  kcalLeft?: number;
+};
 
-export const QuickMealCard = ({ meal, index }: QuickMealCardProps) => {
+export const QuickMealCard = ({ meal, kcalLeft }: QuickMealCardProps) => {
   const router = useRouter();
   const addFoodToMeal = useMealStore((state) => state.addFoodToMeal);
+  const { show } = useToast();
   const [added, setAdded] = useState(false);
-  const addedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    return () => {
-      if (addedTimer.current) {
-        clearTimeout(addedTimer.current);
-      }
-    };
-  }, []);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const overBudget = kcalLeft !== undefined && meal.calories > kcalLeft;
 
   const handleAdd = () => {
     const foodItem: Food = {
@@ -40,248 +42,112 @@ export const QuickMealCard = ({ meal, index }: QuickMealCardProps) => {
       carbohydrates: meal.carbs,
       fat: meal.fat,
       fiber: meal.fiber,
-      servingUnit: meal.servingSize,
+      servingSize: 1,
+      servingUnit: 'serving',
+      servingLabel: meal.servingSize,
       nutrients: [],
     };
-
     addFoodToMeal(foodItem);
     setAdded(true);
-    if (addedTimer.current) {
-      clearTimeout(addedTimer.current);
-    }
-    addedTimer.current = setTimeout(() => setAdded(false), 2000);
+    show(`Added ${meal.name}`, {
+      label: 'View meal',
+      onPress: () => router.push('/meal/draft'),
+    });
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = setTimeout(() => setAdded(false), 2500);
   };
 
   return (
-    <View style={styles.card}>
-      {/* Top row: Number Badge + Meal Name + Calorie Tag */}
-      <View style={styles.topRow}>
-        <View style={styles.titleArea}>
-          <View style={styles.indexBadge}>
-            <Text style={styles.indexText}>{index + 1}</Text>
-          </View>
-          <View style={styles.nameContainer}>
-            <Text style={styles.mealName}>{meal.name}</Text>
-            <Text style={styles.servingText}>Serving: {meal.servingSize}</Text>
-          </View>
+    <RaisedCard padding={16} radiusValue={22} style={styles.card}>
+      <View style={styles.top}>
+        <IconSquare name={iconForTags(meal.tags)} insetStyle />
+        <View style={styles.nameWrap}>
+          <Text style={styles.name}>{meal.name}</Text>
+          <Text style={styles.serving}>{meal.servingSize}</Text>
         </View>
-
-        <View style={styles.calorieBadge}>
-          <Text style={styles.calorieValue}>{meal.calories}</Text>
-          <Text style={styles.calorieUnit}>kcal</Text>
-        </View>
+        <Text style={styles.kcal}>{meal.calories}</Text>
       </View>
-
-      {/* Macro Grid */}
-      <View style={styles.macrosRow}>
-        <View style={styles.macroBox}>
-          <View style={[styles.dot, { backgroundColor: colors.protein }]} />
-          <Text style={styles.macroLabel}>Protein</Text>
-          <Text style={styles.macroVal}>{meal.protein}g</Text>
-        </View>
-
-        <View style={styles.macroBox}>
-          <View style={[styles.dot, { backgroundColor: colors.carbs }]} />
-          <Text style={styles.macroLabel}>Carbs</Text>
-          <Text style={styles.macroVal}>{meal.carbs}g</Text>
-        </View>
-
-        <View style={styles.macroBox}>
-          <View style={[styles.dot, { backgroundColor: colors.fat }]} />
-          <Text style={styles.macroLabel}>Fat</Text>
-          <Text style={styles.macroVal}>{meal.fat}g</Text>
-        </View>
-
-        <View style={styles.macroBox}>
-          <View style={[styles.dot, { backgroundColor: colors.success }]} />
-          <Text style={styles.macroLabel}>Fiber</Text>
-          <Text style={styles.macroVal}>{meal.fiber}g</Text>
-        </View>
+      <MacroDots protein={meal.protein} carbs={meal.carbs} fat={meal.fat} fiber={meal.fiber} />
+      <View style={styles.tags}>
+        {meal.tags.slice(0, 3).map((tag) => (
+          <View key={tag} style={styles.tag}>
+            <Text style={styles.tagText}>{tag === 'quick' ? 'Quick' : tag}</Text>
+          </View>
+        ))}
       </View>
-
-      {/* Footer: Tags + Quick Log Action */}
-      <View style={styles.footerRow}>
-        <View style={styles.tagsContainer}>
-          {meal.tags.map((tag, i) => (
-            <View key={i} style={styles.tagPill}>
-              <Text style={styles.tagText}>#{tag}</Text>
-            </View>
-          ))}
-        </View>
-
-        <TouchableOpacity
-          style={[styles.addBtn, added && styles.addBtnSuccess]}
+      {overBudget ? <Text style={styles.over}>Over today&apos;s budget</Text> : null}
+      <View style={styles.footer}>
+        <PlusButton
+          checked={added}
           onPress={added ? () => router.push('/meal/draft') : handleAdd}
-          activeOpacity={0.7}
-          accessibilityRole="button"
-          accessibilityLabel={added ? 'Review current meal' : `Add ${meal.name} to meal`}
-        >
-          <Ionicons
-            name={added ? 'checkmark' : 'add'}
-            size={16}
-            color={added ? colors.surface : colors.primaryDark}
-          />
-          <Text style={[styles.addBtnText, added && styles.addBtnTextSuccess]}>
-            {added ? 'Review' : 'Add'}
-          </Text>
-        </TouchableOpacity>
+          accessibilityLabel={added ? `Added ${meal.name}` : `Add ${meal.name}`}
+        />
+        <Text style={styles.addLabel}>{added ? 'Added ✓' : '+ Add'}</Text>
       </View>
-    </View>
+    </RaisedCard>
   );
 };
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    padding: spacing.md,
-    marginBottom: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    shadowColor: colors.text,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    marginBottom: 14,
+    gap: 10,
   },
-  topRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: spacing.sm,
-  },
-  titleArea: {
+  top: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    flex: 1,
-    paddingRight: spacing.sm,
-    gap: spacing.sm,
+    gap: 10,
   },
-  indexBadge: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    backgroundColor: colors.primaryLight,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 2,
-  },
-  indexText: {
-    ...typography.caption,
-    fontWeight: '800',
-    color: colors.primaryDark,
-    fontSize: 12,
-  },
-  nameContainer: {
+  nameWrap: {
     flex: 1,
   },
-  mealName: {
-    ...typography.title,
+  name: {
+    fontFamily: fonts.outfitSemiBold,
     fontSize: 16,
-    color: colors.text,
-    lineHeight: 22,
-  },
-  servingText: {
-    ...typography.caption,
-    color: colors.textMuted,
-    marginTop: 2,
-    fontSize: 12,
-  },
-  calorieBadge: {
-    backgroundColor: '#ECFDF5',
-    borderWidth: 1,
-    borderColor: '#A7F3D0',
-    paddingHorizontal: spacing.sm + 2,
-    paddingVertical: 4,
-    borderRadius: radius.md,
-    alignItems: 'center',
-  },
-  calorieValue: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: colors.primaryDark,
-  },
-  calorieUnit: {
-    ...typography.caption,
-    fontSize: 10,
-    color: colors.primaryDark,
     fontWeight: '600',
-    marginTop: -2,
+    color: colors.ink,
   },
-  macrosRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    backgroundColor: colors.background,
-    borderRadius: radius.md,
-    paddingVertical: spacing.xs + 4,
-    paddingHorizontal: spacing.sm,
-    marginVertical: spacing.xs,
-  },
-  macroBox: {
-    alignItems: 'center',
-    flex: 1,
-  },
-  dot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    marginBottom: 2,
-  },
-  macroLabel: {
+  serving: {
     ...typography.caption,
-    fontSize: 10,
-    color: colors.textMuted,
+    color: colors.muted,
+    marginTop: 2,
   },
-  macroVal: {
-    ...typography.caption,
-    fontSize: 12,
-    fontWeight: '700',
-    color: colors.text,
+  kcal: {
+    fontFamily: fonts.outfitSemiBold,
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.accent,
   },
-  footerRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: spacing.sm,
-    gap: spacing.sm,
-  },
-  tagsContainer: {
+  tags: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 4,
-    flex: 1,
+    gap: 6,
   },
-  tagPill: {
-    backgroundColor: colors.divider,
+  tag: {
+    backgroundColor: colors.base,
     paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 12,
+    paddingVertical: 3,
+    borderRadius: 10,
   },
   tagText: {
     ...typography.caption,
-    fontSize: 10,
-    color: colors.textSecondary,
-    fontWeight: '600',
+    color: colors.muted,
+    fontFamily: fonts.manropeBold,
+    fontWeight: '700',
   },
-  addBtn: {
+  over: {
+    ...typography.caption,
+    color: colors.muted,
+    fontFamily: fonts.manropeSemiBold,
+  },
+  footer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.primaryLight,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 6,
-    borderRadius: radius.md,
-    gap: 4,
+    gap: 8,
   },
-  addBtnSuccess: {
-    backgroundColor: colors.success,
-  },
-  addBtnText: {
-    ...typography.caption,
-    fontWeight: '700',
-    color: colors.primaryDark,
-    fontSize: 12,
-  },
-  addBtnTextSuccess: {
-    color: colors.surface,
+  addLabel: {
+    fontFamily: fonts.outfitSemiBold,
+    fontSize: 14,
+    color: colors.accent,
   },
 });

@@ -5,6 +5,7 @@ import { getLocalFoodById, searchLocalFoods } from '@/services/food/localFoods';
 import { openFoodFactsApi } from '@/services/off/openFoodFactsApi';
 import { usdaApi } from '@/services/usda/usdaApi';
 import { mapUsdaFoodToInternal } from '@/services/usda/usdaMapper';
+import { logWarn } from '@/utils/log';
 
 const USDA_COOLDOWN_MS = 15 * 60 * 1000;
 let usdaDisabledUntil = 0;
@@ -47,9 +48,7 @@ export const searchRemoteFoods = async (query: string): Promise<Food[]> => {
       return offFoods;
     }
   } catch (offError) {
-    if (__DEV__) {
-      console.warn('[food-search] Open Food Facts search failed', offError);
-    }
+    logWarn('[food-search] Open Food Facts search failed', offError);
   }
 
   if (isUsdaEnabled() && usdaApi.hasApiKey()) {
@@ -61,9 +60,7 @@ export const searchRemoteFoods = async (query: string): Promise<Food[]> => {
       }
     } catch (usdaError) {
       disableUsda();
-      if (__DEV__) {
-        console.warn('[food-search] USDA search failed; skipping USDA for 15 minutes', usdaError);
-      }
+      logWarn('[food-search] USDA search failed; skipping USDA for 15 minutes', usdaError);
     }
   }
 

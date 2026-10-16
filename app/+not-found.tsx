@@ -1,42 +1,38 @@
-import { Link, Stack } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
+import { PrimaryButton, Screen } from '@/components/ui';
 import { colors } from '@/theme/colors';
-import { spacing } from '@/theme/spacing';
+import { fonts } from '@/theme/fonts';
 import { typography } from '@/theme/typography';
 
 export default function NotFoundScreen() {
+  const router = useRouter();
   return (
-    <>
-      <Stack.Screen options={{ title: 'Not found' }} />
-      <View style={styles.container}>
-        <Text style={styles.title}>This screen does not exist.</Text>
-        <Link href="/" style={styles.link}>
-          <Text style={styles.linkText}>Go to dashboard</Text>
-        </Link>
+    <Screen>
+      <View style={styles.center}>
+        <Text style={styles.title}>This page is not here</Text>
+        <Text style={styles.body}>The link may be old, or that screen was moved. Head back to Today and keep logging.</Text>
+        <PrimaryButton label="Go to Today" onPress={() => router.replace('/')} />
       </View>
-    </>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  center: {
     flex: 1,
-    alignItems: 'center',
     justifyContent: 'center',
-    padding: spacing.lg,
-    backgroundColor: colors.background,
+    gap: 16,
   },
   title: {
-    ...typography.title,
-    color: colors.text,
+    fontFamily: fonts.outfitBold,
+    fontSize: 28,
+    color: colors.ink,
     textAlign: 'center',
   },
-  link: {
-    marginTop: spacing.md,
-  },
-  linkText: {
-    ...typography.bodyLarge,
-    color: colors.primary,
-    fontWeight: '700',
+  body: {
+    ...typography.body,
+    color: colors.muted,
+    textAlign: 'center',
   },
 });

@@ -1,5 +1,6 @@
 import { Food } from '@/types/food';
 import { jsonRequest, withQuery } from '@/services/network/jsonRequest';
+import { logWarn } from '@/utils/log';
 
 type OffProduct = {
   code?: unknown;
@@ -147,17 +148,13 @@ export const openFoodFactsApi = {
         return hits;
       }
     } catch (error) {
-      if (__DEV__) {
-        console.warn('[food-search] Open Food Facts search-a-licious failed', error);
-      }
+      logWarn('[food-search] Open Food Facts search-a-licious failed', error);
     }
 
     try {
       return await searchCgi(query);
     } catch (error) {
-      if (__DEV__) {
-        console.warn('[food-search] Open Food Facts CGI search failed', error);
-      }
+      logWarn('[food-search] Open Food Facts CGI search failed', error);
       return [];
     }
   },

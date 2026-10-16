@@ -1,36 +1,38 @@
 import React, { useMemo, useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TextInput,
-  TouchableOpacity,
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-} from 'react-native';
-import { useRouter } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { safeBack } from '@/utils/navigation';
 import { Food } from '@/types/food';
+import { MealSlot } from '@/types/meal';
 import { useMealStore } from '@/store/mealStore';
 import { getMealSlotLabel } from '@/utils/mealSlot';
 import { parseOptionalNumber, parsePositiveNumber } from '@/utils/nutrition';
+import { sanitizeDecimalInput } from '@/utils/number';
 import { createId } from '@/utils/id';
+import { InsetField, PrimaryButton, Screen, Segmented, TopBar } from '@/components/ui';
+import { useToast } from '@/components/ui/Toast';
 import { colors } from '@/theme/colors';
-import { spacing } from '@/theme/spacing';
+import { fonts } from '@/theme/fonts';
 import { typography } from '@/theme/typography';
-import { radius } from '@/theme/radius';
+
+const SLOTS: { label: string; value: MealSlot }[] = [
+  { label: 'Breakfast', value: 'breakfast' },
+  { label: 'Lunch', value: 'lunch' },
+  { label: 'Dinner', value: 'dinner' },
+  { label: 'Snacks', value: 'snacks' },
+];
+
+const UNITS = ['g', 'ml', 'cup', 'piece', 'plate', 'bowl', 'slice'] as const;
 
 export default function CustomFoodScreen() {
-  const router = useRouter();
-  const insets = useSafeAreaInsets();
   const addFoodToMeal = useMealStore((state) => state.addFoodToMeal);
+  const removeFoodFromMeal = useMealStore((state) => state.removeFoodFromMeal);
   const draftSlot = useMealStore((state) => state.draftSlot) ?? 'snacks';
+  const setDraftSlot = useMealStore((state) => state.setDraftSlot);
+  const { show } = useToast();
 
   const [name, setName] = useState('');
   const [serving, setServing] = useState('100');
+  const [unit, setUnit] = useState<(typeof UNITS)[number]>('g');
   const [calories, setCalories] = useState('');
   const [protein, setProtein] = useState('');
   const [carbs, setCarbs] = useState('');
@@ -38,247 +40,132 @@ export default function CustomFoodScreen() {
   const [fiber, setFiber] = useState('');
   const [sugar, setSugar] = useState('');
   const [sodium, setSodium] = useState('');
+  const [more, setMore] = useState(false);
 
-  const canSave = useMemo(() => {
-    const trimmedName = name.trim();
-    const servingAmount = parsePositiveNumber(serving);
-    const hasMacro =
-      parseOptionalNumber(calories) !== undefined ||
-      parseOptionalNumber(protein) !== undefined ||
-      parseOptionalNumber(carbs) !== undefined ||
-      parseOptionalNumber(fat) !== undefined ||
-      parseOptionalNumber(fiber) !== undefined;
-    return Boolean(trimmedName) && servingAmount !== null && hasMacro;
-  }, [name, serving, calories, protein, carbs, fat, fiber]);
+  const servingAmount = parsePositiveNumber(serving);
+  const nameError = name.trim() ? undefined : 'Add a food name.';
+  const servingError = servingAmount === null ? 'Enter a serving greater than 0.' : undefined;
+  const hasMacro =
+    parseOptionalNumber(calories) !== undefined ||
+    parseOptionalNumber(protein) !== undefined ||
+    parseOptionalNumber(carbs) !== undefined ||
+    parseOptionalNumber(fat) !== undefined ||
+    parseOptionalNumber(fiber) !== undefined;
+  const nutritionError = hasMacro ? undefined : 'Enter calories or at least one macro.';
+  const canSave = !nameError && !servingError && !nutritionError;
 
   const handleSave = () => {
-    const trimmedName = name.trim();
-    const servingAmount = parsePositiveNumber(serving);
-    if (!trimmedName || servingAmount === null) {
-      Alert.alert('Missing details', 'Add a name and a serving size greater than 0.');
-      return;
-    }
-
-    const nextCalories = parseOptionalNumber(calories) ?? 0;
-    const nextProtein = parseOptionalNumber(protein) ?? 0;
-    const nextCarbs = parseOptionalNumber(carbs) ?? 0;
-    const nextFat = parseOptionalNumber(fat) ?? 0;
-    const nextFiber = parseOptionalNumber(fiber);
-    const nextSugar = parseOptionalNumber(sugar);
-    const nextSodium = parseOptionalNumber(sodium);
-
-    if (
-      nextCalories <= 0 &&
-      nextProtein <= 0 &&
-      nextCarbs <= 0 &&
-      nextFat <= 0 &&
-      (nextFiber === undefined || nextFiber <= 0)
-    ) {
-      Alert.alert('Missing nutrition', 'Enter calories or at least one macro for this serving.');
-      return;
-    }
-
+    if (!canSave || servingAmount === null) return;
     const food: Food = {
       id: createId(),
-      name: trimmedName,
+      name: name.trim(),
       dataSource: 'custom',
-      calories: nextCalories,
-      protein: nextProtein,
-      carbohydrates: nextCarbs,
-      fat: nextFat,
-      fiber: nextFiber,
-      sugar: nextSugar,
-      sodium: nextSodium,
+      calories: parseOptionalNumber(calories) ?? 0,
+      protein: parseOptionalNumber(protein) ?? 0,
+      carbohydrates: parseOptionalNumber(carbs) ?? 0,
+      fat: parseOptionalNumber(fat) ?? 0,
+      fiber: parseOptionalNumber(fiber),
+      sugar: parseOptionalNumber(sugar),
+      sodium: parseOptionalNumber(sodium),
       servingSize: servingAmount,
-      servingUnit: 'g',
+      servingUnit: unit,
+      servingLabel: `${servingAmount} ${unit}`,
       nutrients: [],
     };
-
     addFoodToMeal(food);
-    Alert.alert('Added to meal', `${trimmedName} is in ${getMealSlotLabel(draftSlot).toLowerCase()}.`, [
-      { text: 'Add more', onPress: () => router.back() },
-      { text: 'Review meal', onPress: () => router.replace('/meal/draft') },
-    ]);
+    show(`Added to meal · ${food.name}, ${Math.round(food.calories)} kcal`, {
+      label: 'Undo',
+      onPress: () => removeFoodFromMeal(food.id),
+    });
+    safeBack();
   };
 
+  const unitOptions = useMemo(
+    () => UNITS.map((item) => ({ label: item, value: item })),
+    []
+  );
+
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
-      <ScrollView
-        contentContainerStyle={[styles.content, { paddingBottom: 120 + insets.bottom }]}
-        keyboardShouldPersistTaps="handled"
-      >
-        <Text style={styles.intro}>
-          Log a homemade meal or packaged food. Enter nutrition for the serving size you ate.
-        </Text>
-        <Text style={styles.slot}>Adding to {getMealSlotLabel(draftSlot)}</Text>
-
-        <Field label="Name" value={name} onChangeText={setName} placeholder="e.g. Homemade daal" />
-        <Field
-          label="Serving size (g)"
-          value={serving}
-          onChangeText={setServing}
-          placeholder="100"
-          keyboardType="decimal-pad"
-        />
-        <Field
-          label="Calories (kcal)"
-          value={calories}
-          onChangeText={setCalories}
-          placeholder="0"
-          keyboardType="decimal-pad"
-        />
-        <Field
-          label="Protein (g)"
-          value={protein}
-          onChangeText={setProtein}
-          placeholder="0"
-          keyboardType="decimal-pad"
-        />
-        <Field
-          label="Carbs (g)"
-          value={carbs}
-          onChangeText={setCarbs}
-          placeholder="0"
-          keyboardType="decimal-pad"
-        />
-        <Field
-          label="Fat (g)"
-          value={fat}
-          onChangeText={setFat}
-          placeholder="0"
-          keyboardType="decimal-pad"
-        />
-        <Field
-          label="Fiber (g)"
-          value={fiber}
-          onChangeText={setFiber}
-          placeholder="optional"
-          keyboardType="decimal-pad"
-        />
-        <Field
-          label="Sugar (g)"
-          value={sugar}
-          onChangeText={setSugar}
-          placeholder="optional"
-          keyboardType="decimal-pad"
-        />
-        <Field
-          label="Sodium (mg)"
-          value={sodium}
-          onChangeText={setSodium}
-          placeholder="optional"
-          keyboardType="decimal-pad"
-        />
-      </ScrollView>
-
-      <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, spacing.md) }]}>
-        <TouchableOpacity
-          style={[styles.saveButton, !canSave && styles.saveButtonDisabled]}
+    <Screen blobs="B1">
+      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <TopBar title="Custom food" />
+        <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
+          <View style={styles.row}>
+            <InsetField label="Food name" value={name} onChangeText={setName} placeholder="e.g. Homemade daal" error={name.length ? nameError : undefined} />
+            <InsetField
+              label="Serving"
+              value={serving}
+              onChangeText={(text) => setServing(sanitizeDecimalInput(text))}
+              keyboardType="decimal-pad"
+              suffix={unit}
+              error={serving.length ? servingError : undefined}
+            />
+          </View>
+          <Text style={styles.unitLabel}>Unit</Text>
+          <Segmented options={unitOptions} value={unit} onChange={setUnit} />
+          <InsetField
+            label="Calories (kcal)"
+            value={calories}
+            onChangeText={(text) => setCalories(sanitizeDecimalInput(text))}
+            keyboardType="decimal-pad"
+            error={nutritionError && calories.length + protein.length + carbs.length + fat.length + fiber.length > 0 ? nutritionError : undefined}
+          />
+          <View style={styles.row}>
+            <InsetField label="Protein" value={protein} onChangeText={(text) => setProtein(sanitizeDecimalInput(text))} keyboardType="decimal-pad" suffix="g" />
+            <InsetField label="Carbs" value={carbs} onChangeText={(text) => setCarbs(sanitizeDecimalInput(text))} keyboardType="decimal-pad" suffix="g" />
+          </View>
+          <View style={styles.row}>
+            <InsetField label="Fat" value={fat} onChangeText={(text) => setFat(sanitizeDecimalInput(text))} keyboardType="decimal-pad" suffix="g" />
+            <InsetField label="Fiber" value={fiber} onChangeText={(text) => setFiber(sanitizeDecimalInput(text))} keyboardType="decimal-pad" suffix="g" />
+          </View>
+          <Pressable onPress={() => setMore((value) => !value)} accessibilityRole="button" style={styles.moreBtn}>
+            <Text style={styles.more}>{more ? 'Hide extra nutrients' : 'More nutrients (optional)'}</Text>
+          </Pressable>
+          {more ? (
+            <>
+              <InsetField label="Sugar" value={sugar} onChangeText={(text) => setSugar(sanitizeDecimalInput(text))} keyboardType="decimal-pad" suffix="g" />
+              <InsetField label="Sodium" value={sodium} onChangeText={(text) => setSodium(sanitizeDecimalInput(text))} keyboardType="decimal-pad" suffix="mg" />
+            </>
+          ) : null}
+          <Text style={styles.mealLabel}>Add to meal</Text>
+          <Segmented options={SLOTS} value={draftSlot} onChange={setDraftSlot} />
+        </ScrollView>
+        <PrimaryButton
+          label={`+ Add to ${getMealSlotLabel(draftSlot)}`}
           onPress={handleSave}
           disabled={!canSave}
-          accessibilityRole="button"
-          accessibilityLabel="Add custom food to meal"
-        >
-          <Ionicons name="add" size={22} color={colors.surface} />
-          <Text style={styles.saveText}>Add to {getMealSlotLabel(draftSlot)}</Text>
-        </TouchableOpacity>
-      </View>
-    </KeyboardAvoidingView>
+        />
+      </KeyboardAvoidingView>
+    </Screen>
   );
 }
 
-const Field = ({
-  label,
-  value,
-  onChangeText,
-  placeholder,
-  keyboardType,
-}: {
-  label: string;
-  value: string;
-  onChangeText: (text: string) => void;
-  placeholder: string;
-  keyboardType?: 'default' | 'decimal-pad';
-}) => (
-  <View style={styles.field}>
-    <Text style={styles.fieldLabel}>{label}</Text>
-    <TextInput
-      style={styles.input}
-      value={value}
-      onChangeText={onChangeText}
-      placeholder={placeholder}
-      placeholderTextColor={colors.textMuted}
-      keyboardType={keyboardType}
-      inputMode={keyboardType === 'decimal-pad' ? 'decimal' : 'text'}
-    />
-  </View>
-);
-
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
+  flex: { flex: 1 },
   content: {
-    padding: spacing.md,
+    gap: 14,
+    paddingBottom: 24,
   },
-  intro: {
-    ...typography.bodyMedium,
-    color: colors.textSecondary,
-  },
-  slot: {
-    ...typography.caption,
-    color: colors.primaryDark,
-    fontWeight: '700',
-    marginTop: spacing.xs,
-    marginBottom: spacing.md,
-  },
-  field: {
-    marginBottom: spacing.sm,
-  },
-  fieldLabel: {
-    ...typography.caption,
-    fontWeight: '700',
-    color: colors.textSecondary,
-    marginBottom: 6,
-  },
-  input: {
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: Platform.OS === 'ios' ? 12 : 8,
-    ...typography.bodyLarge,
-    color: colors.text,
-  },
-  footer: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    padding: spacing.md,
-    backgroundColor: colors.surface,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  saveButton: {
+  row: {
     flexDirection: 'row',
-    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  unitLabel: {
+    ...typography.fieldLabel,
+    color: colors.muted,
+  },
+  moreBtn: {
+    minHeight: 44,
     justifyContent: 'center',
-    gap: spacing.sm,
-    backgroundColor: colors.primary,
-    padding: spacing.md,
-    borderRadius: radius.md,
   },
-  saveButtonDisabled: {
-    opacity: 0.45,
+  more: {
+    fontFamily: fonts.outfitSemiBold,
+    fontSize: 14,
+    color: colors.accent,
   },
-  saveText: {
-    ...typography.title,
-    color: colors.surface,
+  mealLabel: {
+    ...typography.fieldLabel,
+    color: colors.muted,
   },
 });

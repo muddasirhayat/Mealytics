@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '@/theme/colors';
 import { spacing } from '@/theme/spacing';
 import { radius } from '@/theme/radius';
 import { typography } from '@/theme/typography';
+import { parseDecimal, sanitizeDecimalInput } from '@/utils/number';
 
 interface ServingSizeSelectorProps {
   amount: number;
@@ -22,29 +23,40 @@ export const ServingSizeSelector = ({
   baseAmount,
   onChange,
 }: ServingSizeSelectorProps) => {
-  const [text, setText] = useState(String(Math.round(amount * 10) / 10));
+  const amountText = String(Math.round(amount * 10) / 10);
+  const [text, setText] = useState(amountText);
+  const [syncedAmount, setSyncedAmount] = useState(amount);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    setText(String(Math.round(amount * 10) / 10));
-  }, [amount]);
+  if (amount !== syncedAmount) {
+    setSyncedAmount(amount);
+    setText(amountText);
+    setError(null);
+  }
 
   const handleChangeText = (raw: string) => {
-    setText(raw);
-    const parsed = Number(raw.replace(',', '.').trim());
-    if (Number.isFinite(parsed) && parsed > 0) {
+    const nextText = sanitizeDecimalInput(raw);
+    setText(nextText);
+    const parsed = parseDecimal(nextText);
+    if (parsed !== null && parsed > 0) {
+      setError(null);
       onChange(Math.round(parsed * 10) / 10);
+      return;
     }
+    setError(nextText ? 'Enter a valid serving greater than 0' : 'Enter a serving size');
   };
 
   const commitText = (raw: string) => {
-    const parsed = Number(raw.replace(',', '.').trim());
-    if (!Number.isFinite(parsed) || parsed <= 0) {
-      setText(String(Math.round(amount * 10) / 10));
+    const parsed = parseDecimal(raw);
+    if (parsed === null || parsed <= 0) {
+      setText(amountText);
+      setError(null);
       return;
     }
     const next = Math.round(parsed * 10) / 10;
     onChange(next);
     setText(String(next));
+    setError(null);
   };
 
   const bump = (delta: number) => {
@@ -94,6 +106,7 @@ export const ServingSizeSelector = ({
           <Ionicons name="add" size={22} color={colors.primary} />
         </TouchableOpacity>
       </View>
+      {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
       <View style={styles.presets}>
         {PRESETS.map((preset) => {
@@ -136,6 +149,12 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     marginTop: 4,
     marginBottom: spacing.sm,
+  },
+  errorText: {
+    ...typography.caption,
+    color: colors.error,
+    fontWeight: '600',
+    marginTop: spacing.xs,
   },
   controls: {
     flexDirection: 'row',

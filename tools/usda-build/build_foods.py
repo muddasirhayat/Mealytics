@@ -218,7 +218,6 @@ def build_foods(food_path: Path, nutrients: dict[str, dict[int, float]]) -> list
                 {
                     "id": fdc_id,
                     "name": name,
-                    "dataSource": "usda",
                     "calories": int(round(calories)),
                     "protein": round_macros(protein),
                     "carbohydrates": round_macros(values.get(NUTRIENT_CARBS, 0.0)),
@@ -228,10 +227,6 @@ def build_foods(food_path: Path, nutrients: dict[str, dict[int, float]]) -> list
                         values.get(NUTRIENT_SUGAR, values.get(NUTRIENT_SUGAR_FALLBACK, 0.0))
                     ),
                     "sodium": int(round(values.get(NUTRIENT_SODIUM, 0.0))),
-                    "servingSize": 100,
-                    "servingUnit": "g",
-                    "nutrients": [],
-                    "rawSourceId": fdc_id,
                 }
             )
     foods.sort(key=lambda item: (item["name"].lower(), item["id"]))

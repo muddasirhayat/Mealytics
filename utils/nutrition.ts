@@ -1,4 +1,5 @@
 import { Food } from '@/types/food';
+import { parseDecimal } from '@/utils/number';
 
 export const getBaseServing = (food: Food): number =>
   food.servingSize && food.servingSize > 0 ? food.servingSize : 100;
@@ -33,6 +34,7 @@ export const scaleFoodNutrition = (food: Food, amount: number): Omit<Food, 'id'>
     sodium: scaleAmount(food.sodium, multiplier),
     servingSize: amount,
     servingUnit: unit,
+    servingLabel: food.servingLabel,
     nutrients: (food.nutrients ?? []).map((nutrient) => ({
       ...nutrient,
       amount: nutrient.amount * multiplier,
@@ -41,8 +43,8 @@ export const scaleFoodNutrition = (food: Food, amount: number): Omit<Food, 'id'>
 };
 
 export const parsePositiveNumber = (text: string): number | null => {
-  const amount = Number(text.replace(',', '.').trim());
-  if (!Number.isFinite(amount) || amount <= 0) {
+  const amount = parseDecimal(text);
+  if (amount === null || amount <= 0) {
     return null;
   }
   return amount;
@@ -53,9 +55,19 @@ export const parseOptionalNumber = (text: string): number | undefined => {
   if (!trimmed) {
     return undefined;
   }
-  const amount = Number(trimmed.replace(',', '.'));
-  if (!Number.isFinite(amount) || amount < 0) {
+  const amount = parseDecimal(trimmed);
+  if (amount === null || amount < 0) {
     return undefined;
   }
   return amount;
+};
+
+export const formatFoodServing = (food: Food): string => {
+  const label = food.servingLabel?.trim();
+  if (label) {
+    return label;
+  }
+  const size = Math.round((food.servingSize ?? 100) * 10) / 10;
+  const unit = food.servingUnit || 'g';
+  return `${size}${unit}`;
 };

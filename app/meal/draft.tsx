@@ -1,25 +1,59 @@
-import React from 'react';
-import { View, StyleSheet, FlatList, TouchableOpacity, Alert, Text } from 'react-native';
-import { useRouter } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import React, { useCallback, useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { Feather } from '@expo/vector-icons';
 import { useMealStore } from '@/store/mealStore';
+import { useUserStore } from '@/store/userStore';
 import { mealStorage } from '@/storage/mealStorage';
-import { MealTotalsCard } from '@/components/MealTotalsCard';
-import { MealFoodRow } from '@/components/MealFoodRow';
-import { MealSlotPicker } from '@/components/MealSlotPicker';
 import { EmptyState } from '@/components/StateIndicators';
+import {
+  ConfirmDialog,
+  GlassCard,
+  MacroDots,
+  PrimaryButton,
+  RaisedCard,
+  Screen,
+  Segmented,
+  TopBar,
+} from '@/components/ui';
+import { useToast } from '@/components/ui/Toast';
 import { getMealSlotLabel } from '@/utils/mealSlot';
+import { formatFoodServing } from '@/utils/nutrition';
+import { createId, nowMs } from '@/utils/id';
+import { MealSlot } from '@/types/meal';
 import { colors } from '@/theme/colors';
-import { spacing } from '@/theme/spacing';
+import { fonts } from '@/theme/fonts';
 import { typography } from '@/theme/typography';
-import { radius } from '@/theme/radius';
-import { Ionicons } from '@expo/vector-icons';
-import { createId } from '@/utils/id';
+import { inset } from '@/utils/shadow';
+
+const SLOTS: { label: string; value: MealSlot }[] = [
+  { label: 'Breakfast', value: 'breakfast' },
+  { label: 'Lunch', value: 'lunch' },
+  { label: 'Dinner', value: 'dinner' },
+  { label: 'Snacks', value: 'snacks' },
+];
 
 export default function DraftMealScreen() {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
   const { draftMeal, draftSlot, setDraftSlot, removeFoodFromMeal, clearDraftMeal } = useMealStore();
+  const goals = useUserStore((state) => state.goals);
+  const { show } = useToast();
+  const [todayLoggedKcal, setTodayLoggedKcal] = useState(0);
+  const [pendingDelete, setPendingDelete] = useState<{ id: string; name: string } | null>(null);
+
+  useFocusEffect(
+    useCallback(() => {
+      let cancelled = false;
+      void mealStorage.getMealsByDate(new Date()).then((dayMeals) => {
+        if (!cancelled) {
+          setTodayLoggedKcal(dayMeals.reduce((sum, meal) => sum + meal.totalCalories, 0));
+        }
+      });
+      return () => {
+        cancelled = true;
+      };
+    }, [])
+  );
 
   const totals = draftMeal.reduce(
     (acc, food) => {
@@ -27,17 +61,21 @@ export default function DraftMealScreen() {
       acc.protein += food.protein || 0;
       acc.carbs += food.carbohydrates || 0;
       acc.fat += food.fat || 0;
+      acc.fiber += food.fiber || 0;
       return acc;
     },
-    { calories: 0, protein: 0, carbs: 0, fat: 0 }
+    { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 }
   );
 
-  const handleSaveMeal = async () => {
-    if (draftMeal.length === 0) return;
+  const leftover = goals
+    ? Math.round(goals.targetCalories - todayLoggedKcal - totals.calories)
+    : null;
 
+  const handleSave = async () => {
+    if (draftMeal.length === 0) return;
     const newMeal = {
       id: createId(),
-      timestamp: Date.now(),
+      timestamp: nowMs(),
       slot: draftSlot,
       foods: draftMeal,
       totalCalories: Math.round(totals.calories),
@@ -45,122 +83,167 @@ export default function DraftMealScreen() {
       totalCarbohydrates: Math.round(totals.carbs),
       totalFat: Math.round(totals.fat),
     };
-
     const success = await mealStorage.saveMeal(newMeal);
     if (success) {
       clearDraftMeal();
-      Alert.alert('Meal saved', `${getMealSlotLabel(draftSlot)} was added to today's log.`, [
-        { text: 'OK', onPress: () => router.replace('/') },
-      ]);
+      show(`${getMealSlotLabel(draftSlot)} saved`);
+      router.replace('/');
     } else {
-      Alert.alert('Could not save', 'Please try again.');
+      show('Could not save');
     }
   };
 
-  if (draftMeal.length === 0) {
-    return (
-      <View style={styles.container}>
-        <EmptyState
-          icon="restaurant-outline"
-          message="Your meal is empty. Search for foods to add them here."
-        />
-        <TouchableOpacity style={styles.backButton} onPress={() => router.push('/search')}>
-          <Text style={styles.backButtonText}>Search foods</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
+  const handleRemove = (id: string, name: string) => {
+    setPendingDelete({ id, name });
+  };
 
   return (
-    <View style={styles.container}>
-      <FlatList
-        data={draftMeal}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <MealFoodRow food={item} onRemove={removeFoodFromMeal} />
-        )}
-        ListHeaderComponent={
-          <View style={styles.header}>
-            <MealTotalsCard
-              calories={totals.calories}
-              protein={totals.protein}
-              carbs={totals.carbs}
-              fat={totals.fat}
-            />
-            <MealSlotPicker value={draftSlot} onChange={setDraftSlot} />
-            <Text style={styles.listTitle}>Foods in this meal</Text>
-          </View>
-        }
-        contentContainerStyle={styles.listContent}
-        showsVerticalScrollIndicator={false}
+    <Screen blobs="B1">
+      <TopBar title="Current meal" />
+      {draftMeal.length === 0 ? (
+        <View style={styles.empty}>
+          <EmptyState compact icon="restaurant-outline" message="Your meal is empty." />
+          <PrimaryButton label="Search foods" onPress={() => router.push('/search')} />
+        </View>
+      ) : (
+        <>
+          <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+            <GlassCard padding={20} radiusValue={28}>
+              <Text style={styles.meta}>
+                {getMealSlotLabel(draftSlot)} · {draftMeal.length} item{draftMeal.length === 1 ? '' : 's'}
+              </Text>
+              <Text style={styles.kcal}>{Math.round(totals.calories)}</Text>
+              <MacroDots
+                protein={totals.protein}
+                carbs={totals.carbs}
+                fat={totals.fat}
+                fiber={totals.fiber}
+              />
+              {goals && leftover !== null ? (
+                <Text style={styles.left}>
+                  Leaves {leftover} kcal of your {goals.targetCalories} goal today
+                </Text>
+              ) : null}
+            </GlassCard>
+            {draftMeal.map((food) => (
+              <RaisedCard key={food.id} padding={14} radiusValue={22} style={styles.row}>
+                <View style={styles.copy}>
+                  <Text style={styles.name}>{food.name}</Text>
+                  <Text style={styles.serving}>{formatFoodServing(food)}</Text>
+                  <MacroDots
+                    protein={food.protein}
+                    carbs={food.carbohydrates}
+                    fat={food.fat}
+                    fiber={food.fiber}
+                  />
+                </View>
+                <Text style={styles.rowKcal}>{Math.round(food.calories)}</Text>
+                <Pressable
+                  onPress={() => handleRemove(food.id, food.name)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Delete ${food.name}`}
+                  hitSlop={8}
+                  style={[styles.trash, inset()]}
+                >
+                  <Feather name="trash-2" size={16} color={colors.danger} />
+                </Pressable>
+              </RaisedCard>
+            ))}
+            <Pressable onPress={() => router.push('/search')} style={styles.link} accessibilityRole="button">
+              <Text style={styles.linkText}>+ Add another food</Text>
+            </Pressable>
+            <Text style={styles.saveTo}>Save to</Text>
+            <Segmented options={SLOTS} value={draftSlot} onChange={setDraftSlot} />
+          </ScrollView>
+          <PrimaryButton label="✓ Save meal" onPress={() => void handleSave()} />
+        </>
+      )}
+      <ConfirmDialog
+        visible={pendingDelete !== null}
+        title="Delete food"
+        body={`Remove ${pendingDelete?.name ?? ''}?`}
+        confirmLabel="Delete"
+        destructive
+        onCancel={() => setPendingDelete(null)}
+        onConfirm={() => {
+          if (pendingDelete) removeFoodFromMeal(pendingDelete.id);
+          setPendingDelete(null);
+        }}
       />
-
-      <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, spacing.md) }]}>
-        <TouchableOpacity
-          style={styles.saveButton}
-          onPress={handleSaveMeal}
-          accessibilityRole="button"
-          accessibilityLabel="Save meal"
-        >
-          <Ionicons name="checkmark-circle" size={24} color={colors.surface} style={styles.saveIcon} />
-          <Text style={styles.saveButtonText}>Save {getMealSlotLabel(draftSlot)}</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  empty: {
     flex: 1,
-    backgroundColor: colors.background,
+    justifyContent: 'center',
+    gap: 16,
   },
-  listContent: {
-    padding: spacing.md,
-    paddingBottom: spacing.xxl * 3,
+  scroll: {
+    gap: 12,
+    paddingBottom: 24,
   },
-  header: {
-    marginBottom: spacing.lg,
+  meta: {
+    fontFamily: fonts.outfitSemiBold,
+    fontSize: 16,
+    color: colors.ink,
   },
-  listTitle: {
-    ...typography.title,
-    color: colors.text,
-    marginTop: spacing.lg,
-    marginBottom: spacing.sm,
+  kcal: {
+    fontFamily: fonts.outfitBold,
+    fontSize: 48,
+    letterSpacing: -1.5,
+    color: colors.ink,
+    marginVertical: 8,
   },
-  footer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    padding: spacing.md,
-    backgroundColor: colors.surface,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
+  left: {
+    ...typography.body,
+    color: colors.muted,
+    marginTop: 10,
   },
-  saveButton: {
+  row: {
     flexDirection: 'row',
-    backgroundColor: colors.success,
-    padding: spacing.md,
-    borderRadius: radius.md,
+    alignItems: 'center',
+    gap: 8,
+  },
+  copy: {
+    flex: 1,
+    gap: 4,
+  },
+  name: {
+    fontFamily: fonts.outfitSemiBold,
+    fontSize: 15.5,
+    color: colors.ink,
+  },
+  serving: {
+    ...typography.caption,
+    color: colors.muted,
+  },
+  rowKcal: {
+    fontFamily: fonts.outfitSemiBold,
+    fontSize: 14,
+    color: colors.ink,
+  },
+  trash: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: colors.base,
   },
-  saveIcon: {
-    marginRight: spacing.sm,
+  link: {
+    minHeight: 44,
+    justifyContent: 'center',
   },
-  saveButtonText: {
-    ...typography.title,
-    color: colors.surface,
+  linkText: {
+    fontFamily: fonts.outfitSemiBold,
+    fontSize: 16,
+    color: colors.accent,
   },
-  backButton: {
-    padding: spacing.md,
-    alignItems: 'center',
-    marginBottom: spacing.xl,
-  },
-  backButtonText: {
-    ...typography.bodyLarge,
-    color: colors.primary,
-    fontWeight: '700',
+  saveTo: {
+    ...typography.fieldLabel,
+    color: colors.muted,
+    marginTop: 8,
   },
 });

@@ -34,6 +34,11 @@ yarn-error.*
 .env
 .env*.local
 
+# Play / EAS credentials — never commit
+*-service-account.json
+play-service-account.json
+google-services.json
+
 # typescript
 *.tsbuildinfo
 

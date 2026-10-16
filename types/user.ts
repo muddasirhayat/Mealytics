@@ -3,6 +3,12 @@ export type Gender = 'male' | 'female';
 export type GoalType = 'lose' | 'maintain' | 'gain';
 export type UnitSystem = 'metric' | 'imperial';
 
+export type MacroSplit = {
+  protein: number;
+  carbs: number;
+  fat: number;
+};
+
 export interface UserProfile {
   name: string;
   age: number;
@@ -12,6 +18,8 @@ export interface UserProfile {
   activityLevel: ActivityLevel;
   goalType: GoalType;
   unitSystem: UnitSystem;
+  /** Fractions of calories (e.g. 0.30). Omitted on older profiles. */
+  macroSplit?: MacroSplit;
 }
 
 export interface UserGoals {

@@ -1,44 +1,117 @@
+import { fonts } from '@/theme/fonts';
+
 export const typography = {
-  header: {
-    fontSize: 28,
+  screenHeader: {
+    fontFamily: fonts.outfitBold,
+    fontSize: 30,
     fontWeight: '700' as const,
-    lineHeight: 34,
+    letterSpacing: -0.8,
+    lineHeight: 36,
+  },
+  header: {
+    fontFamily: fonts.outfitBold,
+    fontSize: 30,
+    fontWeight: '700' as const,
+    letterSpacing: -0.8,
+    lineHeight: 36,
+  },
+  topTitle: {
+    fontFamily: fonts.outfitSemiBold,
+    fontSize: 20,
+    fontWeight: '600' as const,
+    lineHeight: 26,
   },
   title: {
+    fontFamily: fonts.outfitSemiBold,
     fontSize: 22,
     fontWeight: '600' as const,
     lineHeight: 28,
   },
+  question: {
+    fontFamily: fonts.outfitBold,
+    fontSize: 34,
+    fontWeight: '700' as const,
+    letterSpacing: -1,
+    lineHeight: 39,
+  },
+  greeting: {
+    fontFamily: fonts.outfitSemiBold,
+    fontSize: 28,
+    fontWeight: '600' as const,
+    lineHeight: 34,
+  },
   subtitle: {
+    fontFamily: fonts.outfitSemiBold,
     fontSize: 18,
     fontWeight: '600' as const,
     lineHeight: 24,
   },
   bodyLarge: {
+    fontFamily: fonts.manropeMedium,
     fontSize: 16,
-    fontWeight: '400' as const,
+    fontWeight: '500' as const,
     lineHeight: 24,
   },
   body: {
-    fontSize: 14,
-    fontWeight: '400' as const,
-    lineHeight: 20,
+    fontFamily: fonts.manropeMedium,
+    fontSize: 15,
+    fontWeight: '500' as const,
+    lineHeight: 22.5,
   },
   bodyMedium: {
-    fontSize: 14,
+    fontFamily: fonts.manropeMedium,
+    fontSize: 15,
     fontWeight: '500' as const,
-    lineHeight: 20,
+    lineHeight: 22.5,
   },
-  caption: {
-    fontSize: 12,
-    fontWeight: '400' as const,
+  fieldLabel: {
+    fontFamily: fonts.manropeBold,
+    fontSize: 12.5,
+    fontWeight: '700' as const,
     lineHeight: 16,
   },
-  label: {
+  fieldValue: {
+    fontFamily: fonts.outfitSemiBold,
+    fontSize: 17,
+    fontWeight: '600' as const,
+    lineHeight: 22,
+  },
+  button: {
+    fontFamily: fonts.outfitSemiBold,
+    fontSize: 18,
+    fontWeight: '600' as const,
+    lineHeight: 24,
+  },
+  chip: {
+    fontFamily: fonts.outfitSemiBold,
+    fontSize: 14,
+    fontWeight: '600' as const,
+    lineHeight: 18,
+  },
+  tabLabel: {
+    fontFamily: fonts.outfitSemiBold,
     fontSize: 12,
     fontWeight: '600' as const,
     lineHeight: 16,
-    textTransform: 'uppercase' as const,
+  },
+  caption: {
+    fontFamily: fonts.manropeMedium,
+    fontSize: 12.5,
+    fontWeight: '500' as const,
+    lineHeight: 16,
+  },
+  label: {
+    fontFamily: fonts.manropeBold,
+    fontSize: 12.5,
+    fontWeight: '700' as const,
+    lineHeight: 16,
+  },
+  bigNumber: {
+    fontFamily: fonts.outfitBold,
+    fontSize: 58,
+    fontWeight: '700' as const,
+    letterSpacing: -2,
+    lineHeight: 64,
   },
 };
 

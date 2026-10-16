@@ -1,65 +1,50 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { colors } from '@/theme/colors';
-import { spacing } from '@/theme/spacing';
-import { typography } from '@/theme/typography';
-import { radius } from '@/theme/radius';
+import { StyleSheet, Text, View } from 'react-native';
+import { useThemeColors } from '@/hooks/useThemeColors';
+import { fonts } from '@/theme/fonts';
+import { RaisedCard } from '@/components/ui/RaisedCard';
+import { ProgressBar } from '@/components/ui/ProgressBar';
+import type { ThemeColors } from '@/theme/palette';
 
-interface MacroCardsGridProps {
+type MacroCardsGridProps = {
   protein: number;
   carbs: number;
   fat: number;
   fiber: number;
-  targetProtein?: number;
-  targetCarbs?: number;
-  targetFat?: number;
-  targetFiber?: number;
-}
-
-interface MacroCardProps {
-  title: string;
-  emoji: string;
-  current: number;
-  target: number;
-  color: string;
-  bgColor: string;
-  borderColor: string;
-}
+  targetProtein: number;
+  targetCarbs: number;
+  targetFat: number;
+  targetFiber: number;
+};
 
 const MacroCard = ({
-  title,
-  emoji,
-  current,
+  label,
+  value,
   target,
   color,
-  bgColor,
-  borderColor,
-}: MacroCardProps) => {
-  const currentVal = Math.round(current);
-  const targetVal = Math.round(target);
-  const percent = targetVal > 0 ? Math.min(100, Math.round((currentVal / targetVal) * 100)) : 0;
-  const remaining = Math.max(0, targetVal - currentVal);
-
+  colors,
+}: {
+  label: string;
+  value: number;
+  target: number;
+  color: string;
+  colors: ThemeColors;
+}) => {
+  const pct = target > 0 ? Math.round((value / target) * 100) : 0;
   return (
-    <View style={[styles.card, { backgroundColor: bgColor, borderColor }]}>
-      <View style={styles.cardHeader}>
-        <Text style={styles.emoji}>{emoji}</Text>
-        <Text style={[styles.percentBadgeText, { color }]}>{percent}%</Text>
+    <RaisedCard padding={14} radiusValue={22} style={styles.card}>
+      <View style={styles.top}>
+        <Text style={[styles.label, { color: colors.muted }]}>{label}</Text>
+        <Text style={[styles.pct, { color: colors.muted }]}>{pct}%</Text>
       </View>
-
-      <Text style={styles.title}>{title}</Text>
-
-      <View style={styles.valuesRow}>
-        <Text style={[styles.currentText, { color }]}>{currentVal}g</Text>
-        <Text style={styles.targetText}>/ {targetVal}g</Text>
+      <Text style={[styles.value, { color: colors.ink }]}>
+        {Math.round(value)}
+        <Text style={[styles.target, { color: colors.muted }]}> / {Math.round(target)} g</Text>
+      </Text>
+      <View style={styles.bar}>
+        <ProgressBar progress={Math.min(1, value / Math.max(1, target))} color={color} height={10} />
       </View>
-
-      <View style={styles.track}>
-        <View style={[styles.fill, { width: `${percent}%`, backgroundColor: color }]} />
-      </View>
-
-      <Text style={styles.remainingText}>{remaining}g left</Text>
-    </View>
+    </RaisedCard>
   );
 };
 
@@ -68,128 +53,60 @@ export const MacroCardsGrid = ({
   carbs,
   fat,
   fiber,
-  targetProtein = 150,
-  targetCarbs = 200,
-  targetFat = 65,
-  targetFiber = 28,
+  targetProtein,
+  targetCarbs,
+  targetFat,
+  targetFiber,
 }: MacroCardsGridProps) => {
+  const colors = useThemeColors();
   return (
     <View style={styles.grid}>
-      <View style={styles.row}>
-        <MacroCard
-          title="Protein"
-          emoji="🥩"
-          current={protein}
-          target={targetProtein}
-          color={colors.protein}
-          bgColor="#FFF1F2"
-          borderColor="#FFE4E6"
-        />
-        <MacroCard
-          title="Carbs"
-          emoji="🍞"
-          current={carbs}
-          target={targetCarbs}
-          color={colors.carbs}
-          bgColor="#EFF6FF"
-          borderColor="#DBEAFE"
-        />
-      </View>
-      <View style={styles.row}>
-        <MacroCard
-          title="Fat"
-          emoji="🥑"
-          current={fat}
-          target={targetFat}
-          color={colors.fat}
-          bgColor="#FFFBEB"
-          borderColor="#FEF3C7"
-        />
-        <MacroCard
-          title="Fiber"
-          emoji="🥦"
-          current={fiber}
-          target={targetFiber}
-          color={colors.fiber}
-          bgColor="#ECFDF5"
-          borderColor="#A7F3D0"
-        />
-      </View>
+      <MacroCard label="Protein" value={protein} target={targetProtein} color={colors.protein} colors={colors} />
+      <MacroCard label="Carbs" value={carbs} target={targetCarbs} color={colors.carbs} colors={colors} />
+      <MacroCard label="Fat" value={fat} target={targetFat} color={colors.fat} colors={colors} />
+      <MacroCard label="Fiber" value={fiber} target={targetFiber} color={colors.fiber} colors={colors} />
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   grid: {
-    width: '100%',
-    gap: spacing.sm,
-  },
-  row: {
     flexDirection: 'row',
-    gap: spacing.sm,
-    width: '100%',
+    flexWrap: 'wrap',
+    gap: 16,
   },
   card: {
-    flex: 1,
-    borderRadius: radius.lg,
-    padding: spacing.sm + 2,
-    borderWidth: 1,
-    shadowColor: colors.text,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    elevation: 2,
+    width: '47%',
+    flexGrow: 1,
+    minWidth: 140,
   },
-  cardHeader: {
+  top: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: spacing.xs,
   },
-  emoji: {
-    fontSize: 18,
-  },
-  percentBadgeText: {
-    ...typography.caption,
-    fontWeight: '800',
-    fontSize: 11,
-  },
-  title: {
-    ...typography.bodyMedium,
+  label: {
+    fontFamily: fonts.manropeBold,
+    fontSize: 13,
     fontWeight: '700',
-    color: colors.text,
-    marginBottom: 2,
   },
-  valuesRow: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: 2,
-    marginBottom: spacing.xs,
+  pct: {
+    fontFamily: fonts.manropeBold,
+    fontSize: 12,
+    fontWeight: '700',
   },
-  currentText: {
-    fontSize: 15,
-    fontWeight: '800',
+  value: {
+    fontFamily: fonts.outfitSemiBold,
+    fontSize: 24,
+    fontWeight: '600',
+    marginTop: 4,
   },
-  targetText: {
-    ...typography.caption,
-    color: colors.textMuted,
-    fontSize: 11,
+  target: {
+    fontFamily: fonts.manropeSemiBold,
+    fontSize: 13,
+    fontWeight: '600',
   },
-  track: {
-    height: 6,
-    backgroundColor: 'rgba(0,0,0,0.06)',
-    borderRadius: 3,
-    overflow: 'hidden',
-    marginBottom: 4,
-  },
-  fill: {
-    height: '100%',
-    borderRadius: 3,
-  },
-  remainingText: {
-    ...typography.caption,
-    fontSize: 10,
-    color: colors.textSecondary,
-    fontWeight: '500',
+  bar: {
+    marginTop: 10,
   },
 });

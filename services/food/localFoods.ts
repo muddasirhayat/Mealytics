@@ -1,18 +1,65 @@
 import { Food } from '@/types/food';
-import catalog from '@/data/foods.json';
+
+type CatalogFood = Partial<Food> & {
+  id: string;
+  name: string;
+  calories: number;
+  protein: number;
+  carbohydrates: number;
+  fat: number;
+};
 
 type FoodsCatalog = {
   version: number;
   generatedAt: string;
   source: string;
   per: string;
-  foods: Food[];
+  foods: CatalogFood[];
 };
 
 const RESULT_LIMIT = 25;
-const DATA = catalog as FoodsCatalog;
-const FOODS: Food[] = DATA.foods;
-const FOODS_BY_ID = new Map(FOODS.map((food) => [food.id, food]));
+
+let FOODS: Food[] | null = null;
+let FOODS_BY_ID: Map<string, Food> | null = null;
+
+const hydrateCatalogFood = (raw: CatalogFood): Food => ({
+  id: raw.id,
+  name: raw.name,
+  brand: raw.brand,
+  dataSource: raw.dataSource ?? 'usda',
+  calories: raw.calories,
+  protein: raw.protein,
+  carbohydrates: raw.carbohydrates,
+  fat: raw.fat,
+  fiber: raw.fiber,
+  sugar: raw.sugar,
+  sodium: raw.sodium,
+  servingSize: raw.servingSize ?? 100,
+  servingUnit: raw.servingUnit ?? 'g',
+  servingLabel: raw.servingLabel,
+  nutrients: raw.nutrients ?? [],
+  rawSourceId: raw.rawSourceId,
+});
+
+const loadFoods = (): Food[] => {
+  if (FOODS) return FOODS;
+  // Metro bundles the JSON; require delays parse until first search / prefetch.
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const catalog = require('../../data/foods.json') as FoodsCatalog;
+  FOODS = catalog.foods.map(hydrateCatalogFood);
+  FOODS_BY_ID = new Map(FOODS.map((food) => [food.id, food]));
+  return FOODS;
+};
+
+export const prefetchLocalFoods = (): void => {
+  const schedule =
+    typeof requestIdleCallback === 'function'
+      ? (task: () => void) => requestIdleCallback(() => task())
+      : (task: () => void) => setTimeout(task, 1);
+  schedule(() => {
+    loadFoods();
+  });
+};
 
 const splitWords = (name: string): string[] =>
   name.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
@@ -44,9 +91,13 @@ const rankMatch = (name: string, query: string, tokens: string[]): number => {
   return worstTokenRank + 1;
 };
 
-export const getLocalFoodById = (id: string): Food | undefined => FOODS_BY_ID.get(id);
+export const getLocalFoodById = (id: string): Food | undefined => {
+  loadFoods();
+  return FOODS_BY_ID?.get(id);
+};
 
 export const searchLocalFoods = (query: string): Food[] => {
+  const catalog = loadFoods();
   const trimmed = query.trim().toLowerCase();
   if (!trimmed) {
     return [];
@@ -58,7 +109,7 @@ export const searchLocalFoods = (query: string): Food[] => {
   }
 
   const matches: { food: Food; rank: number; index: number; length: number }[] = [];
-  for (const food of FOODS) {
+  for (const food of catalog) {
     const name = food.name.toLowerCase();
     if (!tokens.every((token) => name.includes(token))) {
       continue;

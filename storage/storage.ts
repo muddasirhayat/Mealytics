@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { logError } from '@/utils/log';
 
 export const storage = {
   async getItem<T>(key: string): Promise<T | null> {
@@ -6,7 +7,7 @@ export const storage = {
       const value = await AsyncStorage.getItem(key);
       return value ? JSON.parse(value) : null;
     } catch (error) {
-      console.error(`Error reading ${key} from storage:`, error);
+      logError(`Error reading ${key} from storage:`, error);
       return null;
     }
   },
@@ -16,7 +17,7 @@ export const storage = {
       await AsyncStorage.setItem(key, JSON.stringify(value));
       return true;
     } catch (error) {
-      console.error(`Error writing ${key} to storage:`, error);
+      logError(`Error writing ${key} to storage:`, error);
       return false;
     }
   },
@@ -26,7 +27,7 @@ export const storage = {
       await AsyncStorage.removeItem(key);
       return true;
     } catch (error) {
-      console.error(`Error removing ${key} from storage:`, error);
+      logError(`Error removing ${key} from storage:`, error);
       return false;
     }
   },
@@ -36,7 +37,7 @@ export const storage = {
       await AsyncStorage.clear();
       return true;
     } catch (error) {
-      console.error('Error clearing storage:', error);
+      logError('Error clearing storage:', error);
       return false;
     }
   },

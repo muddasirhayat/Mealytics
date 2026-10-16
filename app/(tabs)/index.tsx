@@ -1,74 +1,165 @@
-import React, { useState, useCallback } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ActivityIndicator,
-  ScrollView,
-  TouchableOpacity,
-} from 'react-native';
-import { useRouter, useFocusEffect } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useUserStore } from '@/store/userStore';
 import { mealStorage } from '@/storage/mealStorage';
+import { celebrationStorage } from '@/storage/celebrationStorage';
 import { Meal } from '@/types/meal';
-import { MealTotalsCard } from '@/components/MealTotalsCard';
 import { MacroCardsGrid } from '@/components/MacroCardsGrid';
 import { WaterTrackerCard } from '@/components/WaterTrackerCard';
 import { MealSlotList } from '@/components/MealSlotList';
 import { DraftMealBanner } from '@/components/DraftMealBanner';
+import { GlassCard, LogoMark, RaisedCard, Ring, Screen } from '@/components/ui';
+import { GoalCelebration } from '@/components/ui/GoalCelebration';
 import { getBmiCategory } from '@/utils/bmi';
-import { colors } from '@/theme/colors';
-import { spacing } from '@/theme/spacing';
+import { waterTargetMl as waterFromWeight } from '@/utils/goals';
+import { useThemeColors } from '@/hooks/useThemeColors';
+import { fonts } from '@/theme/fonts';
 import { typography } from '@/theme/typography';
-import { radius } from '@/theme/radius';
+import { raiseSm } from '@/utils/shadow';
+import { useTabBarSpace } from '@/constants/layout';
+import type { ThemeColors } from '@/theme/palette';
 
 const getGreeting = () => {
   const hour = new Date().getHours();
-  if (hour < 12) return 'Good Morning';
-  if (hour < 17) return 'Good Afternoon';
-  return 'Good Evening';
+  if (hour < 12) return 'Good morning';
+  if (hour < 17) return 'Good afternoon';
+  return 'Good evening';
 };
 
 const getGoalLabel = (goalType?: string) => {
   switch (goalType) {
     case 'lose':
-      return '📉 Weight Loss';
+      return 'Lose weight';
     case 'gain':
-      return '📈 Muscle Gain';
+      return 'Gain muscle';
     case 'maintain':
-      return '⚖️ Maintain';
+      return 'Maintain';
     default:
-      return '🎯 Daily Goal';
+      return 'Daily goal';
   }
 };
 
+const makeStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+    content: {
+      paddingHorizontal: 24,
+      paddingTop: 10,
+    },
+    topRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    avatar: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      backgroundColor: colors.base,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    avatarText: {
+      fontFamily: fonts.outfitBold,
+      fontSize: 16,
+      fontWeight: '700',
+      color: colors.accent,
+    },
+    greeting: {
+      ...typography.greeting,
+      color: colors.ink,
+      marginTop: 22,
+      letterSpacing: -0.6,
+    },
+    sub: {
+      fontFamily: fonts.manropeSemiBold,
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors.muted,
+      marginTop: 2,
+      marginBottom: 16,
+    },
+    hero: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginTop: 4,
+    },
+    heroStats: {
+      marginLeft: 22,
+      gap: 16,
+      flex: 1,
+    },
+    statLabel: {
+      fontFamily: fonts.manropeSemiBold,
+      fontSize: 13,
+      fontWeight: '600',
+      color: colors.muted,
+    },
+    statValue: {
+      fontFamily: fonts.outfitSemiBold,
+      fontSize: 26,
+      fontWeight: '600',
+      color: colors.ink,
+    },
+    leftValue: {
+      fontFamily: fonts.outfitBold,
+      fontSize: 32,
+      fontWeight: '700',
+      letterSpacing: -1,
+      color: colors.ink,
+    },
+    leftLabel: {
+      fontFamily: fonts.manropeBold,
+      fontSize: 12,
+      fontWeight: '700',
+      color: colors.muted,
+      marginTop: 3,
+    },
+    macroWrap: {
+      marginTop: 22,
+    },
+    water: {
+      marginTop: 18,
+    },
+    setupTitle: {
+      fontFamily: fonts.outfitBold,
+      fontSize: 20,
+      fontWeight: '700',
+      color: colors.ink,
+    },
+    setupBody: {
+      ...typography.body,
+      color: colors.muted,
+      marginTop: 8,
+    },
+    setupCta: {
+      fontFamily: fonts.outfitSemiBold,
+      fontSize: 16,
+      fontWeight: '600',
+      color: colors.accent,
+      marginTop: 12,
+    },
+  });
+
 export default function HomeScreen() {
   const router = useRouter();
+  const tabBarSpace = useTabBarSpace();
+  const colors = useThemeColors();
+  const styles = makeStyles(colors);
   const { profile, goals } = useUserStore();
-
   const [meals, setMeals] = useState<Meal[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  const loadMeals = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const dayMeals = await mealStorage.getMealsByDate(new Date());
-      setMeals(dayMeals);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+  const [celebrateCalories, setCelebrateCalories] = useState(false);
+  const checkedRef = useRef(false);
 
   useFocusEffect(
     useCallback(() => {
-      loadMeals();
-    }, [loadMeals])
+      checkedRef.current = false;
+      void mealStorage.getMealsByDate(new Date()).then(setMeals);
+    }, [])
   );
 
   const bmiCategory = goals ? getBmiCategory(goals.bmi) : null;
-  const waterTargetMl = profile ? Math.round(profile.weightKg * 35) : 2000;
-
+  const waterTargetMl = profile ? waterFromWeight(profile.weightKg) : 2000;
   const dailyTotals = meals.reduce(
     (acc, meal) => {
       acc.calories += meal.totalCalories;
@@ -81,236 +172,117 @@ export default function HomeScreen() {
     { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 }
   );
 
+  const left = goals ? Math.max(0, goals.targetCalories - dailyTotals.calories) : 0;
+  const progress = goals ? dailyTotals.calories / Math.max(1, goals.targetCalories) : 0;
+  const initial = (profile?.name?.trim()?.[0] ?? '?').toUpperCase();
+
+  useEffect(() => {
+    if (!goals || checkedRef.current) return;
+    if (dailyTotals.calories < goals.targetCalories) return;
+    checkedRef.current = true;
+    void (async () => {
+      const already = await celebrationStorage.hasCalorieGoalCelebrated();
+      if (already) return;
+      await celebrationStorage.markCalorieGoalCelebrated();
+      setCelebrateCalories(true);
+    })();
+  }, [dailyTotals.calories, goals]);
+
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.scrollContent}
-      showsVerticalScrollIndicator={false}
-    >
-      <DraftMealBanner />
-      {/* ─── Hero Header & Profile Status ──────────────────────────── */}
-      <View style={styles.header}>
-        <View style={styles.greetingLeft}>
-          <Text style={styles.greetingText}>
-            {getGreeting()}{profile?.name ? `, ${profile.name}` : ''}! 👋
-          </Text>
-          <Text style={styles.subtitleText}>
-            {goals
-              ? `${getGoalLabel(profile?.goalType)} · ${goals.targetCalories} kcal goal`
-              : 'Set your profile for custom targets'}
-          </Text>
+    <Screen padded={false}>
+      <ScrollView
+        contentContainerStyle={[styles.content, { paddingBottom: tabBarSpace + 16 }]}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.topRow}>
+          <LogoMark />
+          <Pressable
+            onPress={() => router.push('/profile')}
+            accessibilityRole="button"
+            accessibilityLabel={profile ? `Profile, ${profile.name}` : 'Open profile'}
+            style={[styles.avatar, raiseSm()]}
+          >
+            <Text style={styles.avatarText}>{initial}</Text>
+          </Pressable>
         </View>
 
+        <Text style={styles.greeting}>
+          {getGreeting()}
+          {profile?.name ? `, ${profile.name}` : ''}
+        </Text>
+        {goals && bmiCategory ? (
+          <Text style={styles.sub}>
+            {getGoalLabel(profile?.goalType)} · BMI{' '}
+            <Text style={{ color: bmiCategory.color }}>{goals.bmi}</Text>
+          </Text>
+        ) : (
+          <Text style={styles.sub}>Set your profile for custom targets</Text>
+        )}
+
+        <DraftMealBanner />
+
         {goals ? (
-          <TouchableOpacity
-            style={styles.bmiBadge}
-            onPress={() => router.push('/profile')}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.bmiBadgeScore}>BMI {goals.bmi}</Text>
-            <Text style={styles.bmiBadgeSub}>{bmiCategory?.label ?? 'View'}</Text>
-          </TouchableOpacity>
+          <>
+            <GlassCard padding={22} radiusValue={32} style={styles.hero}>
+              <Ring size={160} stroke={14} progress={Math.min(1, progress)}>
+                <Text style={styles.leftValue}>{Math.round(left).toLocaleString()}</Text>
+                <Text style={styles.leftLabel}>kcal left</Text>
+              </Ring>
+              <View style={styles.heroStats}>
+                <View>
+                  <Text style={styles.statLabel}>Eaten</Text>
+                  <Text style={styles.statValue}>{Math.round(dailyTotals.calories).toLocaleString()}</Text>
+                </View>
+                <View>
+                  <Text style={styles.statLabel}>Goal</Text>
+                  <Text style={styles.statValue}>{goals.targetCalories.toLocaleString()}</Text>
+                </View>
+              </View>
+            </GlassCard>
+
+            <View style={styles.macroWrap}>
+              <MacroCardsGrid
+                protein={dailyTotals.protein}
+                carbs={dailyTotals.carbs}
+                fat={dailyTotals.fat}
+                fiber={dailyTotals.fiber}
+                targetProtein={goals.targetProtein}
+                targetCarbs={goals.targetCarbs}
+                targetFat={goals.targetFat}
+                targetFiber={goals.targetFiber}
+              />
+            </View>
+          </>
         ) : (
-          <TouchableOpacity
-            style={styles.setupBadge}
+          <Pressable
             onPress={() => router.push('/profile')}
-            activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel="Set up your profile"
           >
-            <Ionicons name="person-add" size={14} color={colors.primaryDark} />
-            <Text style={styles.setupBadgeText}>Setup</Text>
-          </TouchableOpacity>
+            <RaisedCard padding={22} radiusValue={24}>
+              <Text style={styles.setupTitle}>Set up your profile</Text>
+              <Text style={styles.setupBody}>
+                Add your age, height, weight and activity so Mealytics can set calorie and macro targets.
+              </Text>
+              <Text style={styles.setupCta}>Open Profile</Text>
+            </RaisedCard>
+          </Pressable>
         )}
-      </View>
 
-      {/* ─── 1. Hero Calorie Budget Widget ─────────────────────────── */}
-      <View style={styles.section}>
-        <MealTotalsCard
-          calories={dailyTotals.calories}
-          protein={dailyTotals.protein}
-          carbs={dailyTotals.carbs}
-          fat={dailyTotals.fat}
-          targetCalories={goals?.targetCalories ?? 2000}
-        />
-      </View>
-
-      {/* ─── 2. Side-by-Side Macro Breakdown ───────────────────────── */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Macro Targets</Text>
-        <MacroCardsGrid
-          protein={dailyTotals.protein}
-          carbs={dailyTotals.carbs}
-          fat={dailyTotals.fat}
-          fiber={dailyTotals.fiber}
-          targetProtein={goals?.targetProtein ?? 150}
-          targetCarbs={goals?.targetCarbs ?? 200}
-          targetFat={goals?.targetFat ?? 65}
-          targetFiber={goals?.targetFiber ?? 28}
-        />
-      </View>
-
-      {/* ─── 3. Quick Action Buttons ───────────────────────────────── */}
-      <View style={styles.quickActionsRow}>
-        <TouchableOpacity
-          style={styles.actionPill}
-          onPress={() => router.push('/search')}
-          activeOpacity={0.7}
-        >
-          <View style={[styles.pillIcon, { backgroundColor: colors.primaryLight }]}>
-            <Ionicons name="search" size={16} color={colors.primaryDark} />
+        {profile ? (
+          <View style={styles.water}>
+            <WaterTrackerCard dailyTargetMl={waterTargetMl} />
           </View>
-          <Text style={styles.pillText}>Search Food</Text>
-        </TouchableOpacity>
+        ) : null}
 
-        <TouchableOpacity
-          style={styles.actionPill}
-          onPress={() => router.push('/quickmeals')}
-          activeOpacity={0.7}
-        >
-          <View style={[styles.pillIcon, { backgroundColor: '#FEF3C7' }]}>
-            <Ionicons name="sparkles" size={16} color="#D97706" />
-          </View>
-          <Text style={styles.pillText}>Quick Meals</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.actionPill}
-          onPress={() => router.push('/logs')}
-          activeOpacity={0.7}
-        >
-          <View style={[styles.pillIcon, { backgroundColor: '#E0E7FF' }]}>
-            <Ionicons name="calendar-outline" size={16} color="#4F46E5" />
-          </View>
-          <Text style={styles.pillText}>History</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* ─── 4. Daily Hydration Widget ─────────────────────────────── */}
-      <View style={styles.section}>
-        <WaterTrackerCard dailyTargetMl={waterTargetMl} />
-      </View>
-
-      {/* ─── 5. Categorized Meal Slots (Breakfast/Lunch/Dinner/Snacks) ─── */}
-      <View style={styles.section}>
-        {isLoading ? (
-          <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.md }} />
-        ) : (
-          <MealSlotList meals={meals} targetCalories={goals?.targetCalories} />
-        )}
-      </View>
-    </ScrollView>
+        <MealSlotList meals={meals} targetCalories={goals?.targetCalories} />
+      </ScrollView>
+      <GoalCelebration
+        visible={celebrateCalories}
+        title="Calorie goal reached"
+        body="You hit today’s calorie target. Great logging."
+        onClose={() => setCelebrateCalories(false)}
+      />
+    </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  scrollContent: {
-    padding: spacing.md,
-    paddingBottom: 130, // Room for floating tab bar
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing.lg,
-    paddingHorizontal: spacing.xs,
-  },
-  greetingLeft: {
-    flex: 1,
-    paddingRight: spacing.sm,
-  },
-  greetingText: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: colors.text,
-    letterSpacing: -0.3,
-  },
-  subtitleText: {
-    ...typography.bodyMedium,
-    color: colors.textSecondary,
-    marginTop: 2,
-    fontSize: 13,
-  },
-  bmiBadge: {
-    backgroundColor: colors.primaryLight,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 6,
-    borderRadius: radius.lg,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#A7F3D0',
-  },
-  bmiBadgeScore: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: colors.primaryDark,
-  },
-  bmiBadgeSub: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: colors.primaryDark,
-    opacity: 0.8,
-  },
-  setupBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: colors.primaryLight,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: radius.md,
-  },
-  setupBadgeText: {
-    ...typography.caption,
-    fontWeight: '700',
-    color: colors.primaryDark,
-  },
-  section: {
-    marginBottom: spacing.lg,
-  },
-  sectionTitle: {
-    ...typography.title,
-    fontSize: 18,
-    color: colors.text,
-    marginBottom: spacing.sm + 2,
-    paddingHorizontal: spacing.xs,
-  },
-  quickActionsRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    marginBottom: spacing.lg,
-  },
-  actionPill: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.sm,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    gap: spacing.xs,
-    shadowColor: colors.text,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
-    shadowRadius: 4,
-    elevation: 1,
-  },
-  pillIcon: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  pillText: {
-    ...typography.caption,
-    fontWeight: '700',
-    color: colors.text,
-    fontSize: 11,
-    flexShrink: 1,
-  },
-});

@@ -6,6 +6,9 @@ export const spacing = {
   lg: 24,
   xl: 32,
   xxl: 48,
+  screenX: 24,
+  screenTop: 10,
+  card: 16,
 };
 
 export type Spacing = typeof spacing;

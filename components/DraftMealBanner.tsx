@@ -1,13 +1,12 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import { useMealStore } from '@/store/mealStore';
 import { getMealSlotLabel } from '@/utils/mealSlot';
 import { colors } from '@/theme/colors';
-import { spacing } from '@/theme/spacing';
+import { fonts } from '@/theme/fonts';
 import { typography } from '@/theme/typography';
-import { radius } from '@/theme/radius';
+import { GlassCard } from '@/components/ui/GlassCard';
 
 export const DraftMealBanner = () => {
   const router = useRouter();
@@ -20,56 +19,53 @@ export const DraftMealBanner = () => {
   }
 
   return (
-    <TouchableOpacity
-      style={styles.banner}
+    <Pressable
       onPress={() => router.push('/meal/draft')}
-      activeOpacity={0.85}
       accessibilityRole="button"
       accessibilityLabel={`Review current meal, ${count} items`}
+      style={styles.press}
     >
-      <View style={styles.iconWrap}>
-        <Ionicons name="restaurant" size={18} color={colors.surface} />
-      </View>
-      <View style={styles.copy}>
-        <Text style={styles.title}>{slotLabel} · {count} item{count === 1 ? '' : 's'}</Text>
-        <Text style={styles.subtitle}>Review and save to {slotLabel.toLowerCase()}</Text>
-      </View>
-      <Ionicons name="chevron-forward" size={20} color={colors.primaryDark} />
-    </TouchableOpacity>
+      <GlassCard padding={14} radiusValue={22}>
+        <View style={styles.row}>
+          <View style={styles.copy}>
+            <Text style={styles.title}>
+              {slotLabel} · {count} item{count === 1 ? '' : 's'}
+            </Text>
+            <Text style={styles.sub}>Tap to review and save</Text>
+          </View>
+          <Text style={styles.cta}>View</Text>
+        </View>
+      </GlassCard>
+    </Pressable>
   );
 };
 
 const styles = StyleSheet.create({
-  banner: {
+  press: {
+    marginBottom: 16,
+  },
+  row: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.primaryLight,
-    borderWidth: 1,
-    borderColor: '#A7F3D0',
-    borderRadius: radius.lg,
-    padding: spacing.sm,
-    marginBottom: spacing.md,
-    gap: spacing.sm,
-  },
-  iconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   copy: {
     flex: 1,
   },
   title: {
-    ...typography.bodyMedium,
-    fontWeight: '700',
-    color: colors.primaryDark,
+    fontFamily: fonts.outfitSemiBold,
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.ink,
   },
-  subtitle: {
+  sub: {
     ...typography.caption,
-    color: colors.primaryDark,
-    opacity: 0.8,
+    color: colors.muted,
+    marginTop: 2,
+  },
+  cta: {
+    fontFamily: fonts.outfitSemiBold,
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.accent,
   },
 });

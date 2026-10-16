@@ -33,6 +33,28 @@ export const mealStorage = {
     const updatedMeals = meals.filter(m => m.id !== id);
     return await storage.setItem(MEALS_STORAGE_KEY, updatedMeals);
   },
+
+  async removeFood(mealId: string, index: number): Promise<boolean> {
+    const meals = await this.getMeals();
+    const meal = meals.find((item) => item.id === mealId);
+    if (!meal || index < 0 || index >= meal.foods.length) {
+      return false;
+    }
+    const foods = meal.foods.filter((_, foodIndex) => foodIndex !== index);
+    if (foods.length === 0) {
+      return this.deleteMeal(mealId);
+    }
+    const updated: Meal = {
+      ...meal,
+      foods,
+      totalCalories: Math.round(foods.reduce((sum, food) => sum + (food.calories || 0), 0)),
+      totalProtein: Math.round(foods.reduce((sum, food) => sum + (food.protein || 0), 0)),
+      totalCarbohydrates: Math.round(foods.reduce((sum, food) => sum + (food.carbohydrates || 0), 0)),
+      totalFat: Math.round(foods.reduce((sum, food) => sum + (food.fat || 0), 0)),
+    };
+    const next = meals.map((item) => (item.id === mealId ? updated : item));
+    return storage.setItem(MEALS_STORAGE_KEY, next);
+  },
   
   async clearMeals(): Promise<boolean> {
     return await storage.removeItem(MEALS_STORAGE_KEY);

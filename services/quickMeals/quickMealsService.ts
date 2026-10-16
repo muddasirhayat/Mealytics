@@ -103,4 +103,25 @@ export const quickMealsService = {
     await storage.removeItem(STORAGE_KEY_DAILY);
     return this.getDailyQuickMeals(currentDate);
   },
+
+  getMealsByTag(tag: string, currentDate: Date = new Date(), count = DAILY_COUNT): QuickMeal[] {
+    const tagged = this.getAllMeals().filter((meal) => meal.tags.includes(tag));
+    const seed = getLocalDateString(currentDate) + tag;
+    let hash = 0;
+    for (let i = 0; i < seed.length; i += 1) {
+      hash = (hash * 31 + seed.charCodeAt(i)) >>> 0;
+    }
+    const arr = [...tagged];
+    for (let i = arr.length - 1; i > 0; i -= 1) {
+      hash = (Math.imul(hash, 1664525) + 1013904223) >>> 0;
+      const j = hash % (i + 1);
+      const current = arr[i];
+      const swap = arr[j];
+      if (current && swap) {
+        arr[i] = swap;
+        arr[j] = current;
+      }
+    }
+    return arr.slice(0, count);
+  },
 };

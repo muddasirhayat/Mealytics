@@ -6,6 +6,8 @@ export const useFoodSearch = () => {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Food[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isPending, setIsPending] = useState(false);
+  const [searchedQuery, setSearchedQuery] = useState('');
   const [error, setError] = useState<string | null>(null);
 
   const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -19,6 +21,17 @@ export const useFoodSearch = () => {
       setResults([]);
       setError(null);
       setIsLoading(false);
+      setIsPending(false);
+      setSearchedQuery('');
+      return;
+    }
+
+    if (trimmed.length < 2) {
+      setResults([]);
+      setError(null);
+      setIsLoading(false);
+      setIsPending(false);
+      setSearchedQuery(trimmed);
       return;
     }
 
@@ -26,8 +39,10 @@ export const useFoodSearch = () => {
     setResults(localMatches);
     setError(null);
 
-    if (localMatches.length > 0 || trimmed.length < 2) {
+    if (localMatches.length > 0) {
       setIsLoading(false);
+      setIsPending(false);
+      setSearchedQuery(trimmed);
       return;
     }
 
@@ -41,6 +56,8 @@ export const useFoodSearch = () => {
       setResults(remote);
       setError(null);
       setIsLoading(false);
+      setIsPending(false);
+      setSearchedQuery(trimmed);
     } catch (err) {
       if (requestId !== requestIdRef.current) {
         return;
@@ -48,6 +65,8 @@ export const useFoodSearch = () => {
       setError(err instanceof Error ? err.message : 'Could not search foods. Please try again.');
       setResults([]);
       setIsLoading(false);
+      setIsPending(false);
+      setSearchedQuery(trimmed);
     }
   }, []);
 
@@ -57,6 +76,19 @@ export const useFoodSearch = () => {
     if (searchTimeout.current) {
       clearTimeout(searchTimeout.current);
     }
+
+    const trimmed = text.trim();
+    if (!trimmed) {
+      requestIdRef.current += 1;
+      setResults([]);
+      setError(null);
+      setIsLoading(false);
+      setIsPending(false);
+      setSearchedQuery('');
+      return;
+    }
+
+    setIsPending(true);
 
     searchTimeout.current = setTimeout(() => {
       void searchFoods(text);
@@ -77,6 +109,8 @@ export const useFoodSearch = () => {
     setQuery: handleSearchChange,
     results,
     isLoading,
+    isPending,
+    searchedQuery,
     error,
     searchFoods,
   };
