@@ -1,8 +1,11 @@
 import React, { useRef } from 'react';
 import { View } from 'react-native';
 import { Tabs } from 'expo-router';
+import { enableFreeze } from 'react-native-screens';
 import { BlurTargetView } from 'expo-blur';
 import { FloatingTabBar } from '@/components/ui/FloatingTabBar';
+
+enableFreeze(true);
 
 export default function TabLayout() {
   const blurTargetRef = useRef<View>(null);
@@ -20,6 +23,7 @@ export default function TabLayout() {
         screenOptions={{
           headerShown: false,
           tabBarHideOnKeyboard: true,
+          lazy: true,
           freezeOnBlur: true,
         }}
       >

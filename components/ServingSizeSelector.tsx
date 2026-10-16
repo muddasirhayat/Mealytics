@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors } from '@/theme/colors';
+import { useTheme } from '@/hooks/useTheme';
 import { spacing } from '@/theme/spacing';
 import { radius } from '@/theme/radius';
 import { typography } from '@/theme/typography';
@@ -23,6 +23,7 @@ export const ServingSizeSelector = ({
   baseAmount,
   onChange,
 }: ServingSizeSelectorProps) => {
+  const { colors, isDark } = useTheme();
   const amountText = String(Math.round(amount * 10) / 10);
   const [text, setText] = useState(amountText);
   const [syncedAmount, setSyncedAmount] = useState(amount);
@@ -64,49 +65,62 @@ export const ServingSizeSelector = ({
     onChange(next);
   };
 
+  const fieldBg = isDark ? colors.surfaceRaised : colors.background;
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.label}>Your serving</Text>
-      <Text style={styles.hint}>
+    <View
+      style={[
+        styles.container,
+        {
+          backgroundColor: isDark ? colors.surface : colors.surface,
+          borderColor: colors.border,
+        },
+      ]}
+    >
+      <Text style={[styles.label, { color: colors.ink }]}>Your serving</Text>
+      <Text style={[styles.hint, { color: colors.inkSecondary }]}>
         Database values are per {Math.round(baseAmount)}
         {unit}. Nutrition below updates for the amount you enter.
       </Text>
 
       <View style={styles.controls}>
         <TouchableOpacity
-          style={styles.button}
+          style={[styles.button, { backgroundColor: fieldBg }]}
           onPress={() => bump(-STEP)}
           disabled={amount <= 1}
           accessibilityRole="button"
           accessibilityLabel={`Decrease serving by ${STEP}${unit}`}
         >
-          <Ionicons name="remove" size={22} color={amount <= 1 ? colors.border : colors.primary} />
+          <Ionicons name="remove" size={22} color={amount <= 1 ? colors.border : colors.accent} />
         </TouchableOpacity>
 
-        <View style={styles.inputWrap}>
+        <View style={[styles.inputWrap, { backgroundColor: fieldBg, borderColor: colors.border }]}>
           <TextInput
-            style={styles.input}
+            style={[styles.input, { color: colors.ink }]}
             value={text}
             onChangeText={handleChangeText}
             onBlur={() => commitText(text)}
             onSubmitEditing={() => commitText(text)}
             keyboardType="decimal-pad"
             inputMode="decimal"
+            placeholderTextColor={colors.inkMuted}
+            selectionColor={colors.accent}
+            cursorColor={colors.accent}
             accessibilityLabel="Serving size"
           />
-          <Text style={styles.unit}>{unit}</Text>
+          <Text style={[styles.unit, { color: colors.inkMuted }]}>{unit}</Text>
         </View>
 
         <TouchableOpacity
-          style={styles.button}
+          style={[styles.button, { backgroundColor: fieldBg }]}
           onPress={() => bump(STEP)}
           accessibilityRole="button"
           accessibilityLabel={`Increase serving by ${STEP}${unit}`}
         >
-          <Ionicons name="add" size={22} color={colors.primary} />
+          <Ionicons name="add" size={22} color={colors.accent} />
         </TouchableOpacity>
       </View>
-      {error ? <Text style={styles.errorText}>{error}</Text> : null}
+      {error ? <Text style={[styles.errorText, { color: colors.danger }]}>{error}</Text> : null}
 
       <View style={styles.presets}>
         {PRESETS.map((preset) => {
@@ -114,12 +128,23 @@ export const ServingSizeSelector = ({
           return (
             <TouchableOpacity
               key={preset}
-              style={[styles.preset, selected && styles.presetSelected]}
+              style={[
+                styles.preset,
+                {
+                  backgroundColor: selected ? colors.primaryLight : fieldBg,
+                  borderColor: selected ? colors.accent : colors.border,
+                },
+              ]}
               onPress={() => onChange(preset)}
               accessibilityRole="button"
               accessibilityState={{ selected }}
             >
-              <Text style={[styles.presetText, selected && styles.presetTextSelected]}>
+              <Text
+                style={[
+                  styles.presetText,
+                  { color: selected ? colors.accent : colors.inkSecondary },
+                ]}
+              >
                 {preset}
                 {unit}
               </Text>
@@ -133,26 +158,21 @@ export const ServingSizeSelector = ({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: colors.surface,
     padding: spacing.md,
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: colors.border,
   },
   label: {
     ...typography.bodyLarge,
-    color: colors.text,
     fontWeight: '700',
   },
   hint: {
     ...typography.caption,
-    color: colors.textSecondary,
     marginTop: 4,
     marginBottom: spacing.sm,
   },
   errorText: {
     ...typography.caption,
-    color: colors.error,
     fontWeight: '600',
     marginTop: spacing.xs,
   },
@@ -164,7 +184,6 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: colors.background,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -173,22 +192,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginHorizontal: spacing.sm,
-    backgroundColor: colors.background,
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: colors.border,
     paddingHorizontal: spacing.sm,
     height: 44,
   },
   input: {
     flex: 1,
     ...typography.title,
-    color: colors.text,
     paddingVertical: 0,
   },
   unit: {
     ...typography.bodyMedium,
-    color: colors.textSecondary,
     fontWeight: '700',
     marginLeft: spacing.xs,
   },
@@ -202,20 +217,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm,
     paddingVertical: 6,
     borderRadius: radius.round,
-    backgroundColor: colors.background,
     borderWidth: 1,
-    borderColor: colors.border,
-  },
-  presetSelected: {
-    backgroundColor: colors.primaryLight,
-    borderColor: colors.primary,
   },
   presetText: {
     ...typography.caption,
     fontWeight: '700',
-    color: colors.textSecondary,
-  },
-  presetTextSelected: {
-    color: colors.primaryDark,
   },
 });

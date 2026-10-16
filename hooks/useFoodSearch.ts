@@ -92,7 +92,7 @@ export const useFoodSearch = () => {
 
     searchTimeout.current = setTimeout(() => {
       void searchFoods(text);
-    }, 400);
+    }, 250);
   }, [searchFoods]);
 
   useEffect(() => {

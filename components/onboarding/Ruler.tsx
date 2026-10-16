@@ -1,20 +1,19 @@
-import React, { useMemo, useRef } from 'react';
-import {
-  FlatList,
-  StyleSheet,
-  Text,
-  View,
-  type NativeScrollEvent,
-  type NativeSyntheticEvent,
-} from 'react-native';
-import { useThemeColors } from '@/hooks/useThemeColors';
+import React, { useEffect, useMemo, useRef } from 'react';
+import { StyleSheet, Text, View } from 'react-native';
+import Animated, {
+  runOnJS,
+  useAnimatedScrollHandler,
+  useSharedValue,
+} from 'react-native-reanimated';
+import { useTheme } from '@/hooks/useTheme';
 import { fonts } from '@/theme/fonts';
 import { inset } from '@/utils/shadow';
-import { tickFeedback } from '@/utils/feedback';
+import { useTickFeedback } from '@/hooks/useTickFeedback';
 
 const TICK = 14;
 const RULER_WIDTH = 364;
 const CENTER = RULER_WIDTH / 2;
+const LABEL_WIDTH = 40;
 
 type RulerProps = {
   value: number;
@@ -35,9 +34,11 @@ export const Ruler = ({
   onChange,
   accessibilityLabel,
 }: RulerProps) => {
-  const colors = useThemeColors();
-  const listRef = useRef<FlatList<number>>(null);
+  const { colors, isDark } = useTheme();
+  const { tickIfChanged } = useTickFeedback();
+  const listRef = useRef<Animated.FlatList<number>>(null);
   const lastEmitted = useRef(value);
+  const scrollX = useSharedValue(0);
 
   const values = useMemo(() => {
     const next: number[] = [];
@@ -58,26 +59,36 @@ export const Ruler = ({
     const next = values[Math.min(values.length - 1, Math.max(0, index))];
     if (next === undefined || next === lastEmitted.current) return;
     lastEmitted.current = next;
-    tickFeedback();
+    tickIfChanged(next, majorEvery);
     onChange(next);
   };
 
-  const onScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-    emitFromOffset(event.nativeEvent.contentOffset.x);
-  };
+  const scrollHandler = useAnimatedScrollHandler({
+    onScroll: (event) => {
+      scrollX.value = event.contentOffset.x;
+      runOnJS(emitFromOffset)(event.contentOffset.x);
+    },
+  });
 
-  const onMomentumScrollEnd = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-    emitFromOffset(event.nativeEvent.contentOffset.x);
-  };
+  useEffect(() => {
+    lastEmitted.current = value;
+    const offset = indexOf(value) * TICK;
+    listRef.current?.scrollToOffset({ offset, animated: false });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only re-sync when external value jumps (unit switch)
+  }, [min, max, step]);
 
   return (
     <View
-      style={[styles.ruler, inset(), { backgroundColor: colors.base }]}
+      style={[
+        styles.ruler,
+        inset(),
+        { backgroundColor: isDark ? colors.surfaceRaised : colors.base },
+      ]}
       accessibilityRole="adjustable"
       accessibilityLabel={accessibilityLabel}
       accessibilityValue={{ min, max, now: value }}
     >
-      <FlatList
+      <Animated.FlatList
         ref={listRef}
         horizontal
         data={values}
@@ -87,9 +98,9 @@ export const Ruler = ({
         decelerationRate="fast"
         getItemLayout={(_, index) => ({ length: TICK, offset: TICK * index, index })}
         initialScrollIndex={indexOf(value)}
-        onScroll={onScroll}
+        onScroll={scrollHandler}
         scrollEventThrottle={16}
-        onMomentumScrollEnd={onMomentumScrollEnd}
+        onMomentumScrollEnd={(e) => emitFromOffset(e.nativeEvent.contentOffset.x)}
         onScrollToIndexFailed={({ index }) => {
           requestAnimationFrame(() => {
             listRef.current?.scrollToOffset({ offset: index * TICK, animated: false });
@@ -98,11 +109,20 @@ export const Ruler = ({
         contentContainerStyle={{ paddingHorizontal: CENTER - TICK / 2 }}
         renderItem={({ item, index }) => {
           const major = index % majorEvery === 0;
+          const label =
+            Number.isInteger(item) || Math.abs(item - Math.round(item)) < 1e-6
+              ? String(Math.round(item))
+              : item.toFixed(1);
           return (
             <View style={styles.tickCol}>
               {major ? (
-                <Text style={[styles.tickLabel, { color: colors.muted }]} accessible={false}>
-                  {Number.isInteger(item) ? item : item.toFixed(1)}
+                <Text
+                  style={[styles.tickLabel, { color: colors.inkMuted }]}
+                  numberOfLines={1}
+                  allowFontScaling={false}
+                  accessible={false}
+                >
+                  {label}
                 </Text>
               ) : (
                 <View style={styles.tickSpacer} />
@@ -112,7 +132,7 @@ export const Ruler = ({
                   styles.tick,
                   major
                     ? { height: 34, backgroundColor: colors.ink }
-                    : { height: 18, backgroundColor: colors.placeholder },
+                    : { height: 18, backgroundColor: colors.inkMuted },
                 ]}
               />
             </View>
@@ -148,9 +168,11 @@ const styles = StyleSheet.create({
   },
   tickLabel: {
     fontFamily: fonts.manropeBold,
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
     marginBottom: 8,
+    width: LABEL_WIDTH,
+    textAlign: 'center',
   },
   tickSpacer: {
     height: 20,

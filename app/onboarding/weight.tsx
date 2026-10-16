@@ -9,12 +9,13 @@ import { safeBack } from '@/utils/navigation';
 import { HEIGHT_CM_MAX, HEIGHT_CM_MIN, WEIGHT_KG_MAX, WEIGHT_KG_MIN } from '@/constants/profileOptions';
 import { getBmiCategory } from '@/utils/bmi';
 import { kgToLbs, lbsToKg } from '@/utils/units';
-import { colors } from '@/theme/colors';
+import { useTheme } from '@/hooks/useTheme';
 import { fonts } from '@/theme/fonts';
 import type { UnitSystem } from '@/types/user';
 
 export default function OnboardingWeight() {
   const router = useRouter();
+  const { colors } = useTheme();
   const weightKg = useOnboardingStore((s) => s.weightKg);
   const heightCm = useOnboardingStore((s) => s.heightCm);
   const unitSystem = useOnboardingStore((s) => s.unitSystem);
@@ -38,9 +39,9 @@ export default function OnboardingWeight() {
       onContinue={() => router.push('/onboarding/activity')}
     >
       <View style={styles.center}>
-        <Text style={styles.value} accessibilityLiveRegion="polite">
-          {imperial ? lbs.toFixed(1) : weightKg.toFixed(1)}
-          <Text style={styles.unit}> {imperial ? 'lb' : 'kg'}</Text>
+        <Text style={[styles.value, { color: colors.ink }]} accessibilityLiveRegion="polite">
+          {imperial ? Math.round(lbs) : weightKg.toFixed(1)}
+          <Text style={[styles.unit, { color: colors.inkMuted }]}> {imperial ? 'lb' : 'kg'}</Text>
         </Text>
         <View style={styles.seg}>
           <Segmented
@@ -57,10 +58,10 @@ export default function OnboardingWeight() {
       {imperial ? (
         <Ruler
           key="weight-lb"
-          value={lbs}
+          value={Math.round(lbs)}
           min={66}
           max={660}
-          step={0.2}
+          step={1}
           majorEvery={10}
           accessibilityLabel="Weight in pounds"
           onChange={(next) => {
@@ -74,12 +75,12 @@ export default function OnboardingWeight() {
           min={WEIGHT_KG_MIN}
           max={WEIGHT_KG_MAX}
           step={0.1}
-          majorEvery={10}
+          majorEvery={5}
           accessibilityLabel="Weight in kilograms"
           onChange={(next) => patch({ weightKg: next })}
         />
       )}
-      <Text style={styles.bmi}>
+      <Text style={[styles.bmi, { color: colors.inkSecondary }]}>
         BMI {bmi} · {category.label.toLowerCase()}, we will set a steady, healthy pace
       </Text>
     </OnboardingShell>
@@ -96,13 +97,11 @@ const styles = StyleSheet.create({
     fontSize: 64,
     fontWeight: '700',
     letterSpacing: -2,
-    color: colors.ink,
   },
   unit: {
     fontFamily: fonts.outfitSemiBold,
     fontSize: 20,
     fontWeight: '600',
-    color: colors.muted,
   },
   seg: {
     width: 180,
@@ -112,7 +111,6 @@ const styles = StyleSheet.create({
     fontFamily: fonts.manropeBold,
     fontSize: 13,
     fontWeight: '600',
-    color: colors.muted,
     textAlign: 'center',
     marginTop: 18,
   },

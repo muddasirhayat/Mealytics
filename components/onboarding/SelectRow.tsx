@@ -1,11 +1,14 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { IconSquare } from '@/components/ui/IconSquare';
-import { colors } from '@/theme/colors';
+import { PressableScale } from '@/components/ui/PressableScale';
+import { useTheme } from '@/hooks/useTheme';
 import { fonts } from '@/theme/fonts';
 import { typography } from '@/theme/typography';
 import { inset, raiseSm } from '@/utils/shadow';
+import { emitSelectionHaptic } from '@/hooks/useTickFeedback';
+import { usePreferencesStore } from '@/store/preferencesStore';
 
 type SelectRowProps = {
   label: string;
@@ -15,24 +18,81 @@ type SelectRowProps = {
   onPress: () => void;
 };
 
-export const SelectRow = ({ label, description, icon, selected, onPress }: SelectRowProps) => (
-  <Pressable
-    onPress={onPress}
-    accessibilityRole="button"
-    accessibilityState={{ selected }}
-    accessibilityLabel={`${label}. ${description}`}
-    style={[styles.row, selected ? inset() : raiseSm(), { minHeight: 78 }]}
-  >
-    <IconSquare name={icon} insetStyle={!selected} color={selected ? colors.accent : colors.muted} size={46} />
-    <View style={styles.copy}>
-      <Text style={[styles.label, selected && styles.labelOn]}>{label}</Text>
-      <Text style={styles.description}>{description}</Text>
-    </View>
-    <View style={[styles.radio, selected ? styles.radioOn : inset()]}>
-      {selected ? <Feather name="check" size={15} color={colors.textInverse} accessible={false} /> : null}
-    </View>
-  </Pressable>
-);
+export const SelectRow = ({ label, description, icon, selected, onPress }: SelectRowProps) => {
+  const { colors, isDark } = useTheme();
+  const soundsOn = usePreferencesStore((s) => s.soundsAndHaptics);
+
+  return (
+    <PressableScale
+      onPress={() => {
+        emitSelectionHaptic(soundsOn);
+        onPress();
+      }}
+      accessibilityRole="button"
+      accessibilityState={{ selected }}
+      accessibilityLabel={`${label}. ${description}`}
+      style={[
+        styles.row,
+        selected
+          ? isDark
+            ? { backgroundColor: colors.accent }
+            : inset()
+          : isDark
+            ? { backgroundColor: colors.surfaceRaised }
+            : [raiseSm(), { backgroundColor: colors.base }],
+        { minHeight: 78 },
+      ]}
+    >
+      <IconSquare
+        name={icon}
+        insetStyle={!selected || isDark}
+        color={selected ? (isDark ? colors.onAccent : colors.accent) : colors.inkSecondary}
+        size={46}
+      />
+      <View style={styles.copy}>
+        <Text
+          style={[
+            styles.label,
+            {
+              color: selected
+                ? isDark
+                  ? colors.onAccent
+                  : colors.accent
+                : colors.ink,
+            },
+          ]}
+        >
+          {label}
+        </Text>
+        <Text
+          style={[
+            styles.description,
+            { color: selected && isDark ? colors.onAccent : colors.inkSecondary },
+          ]}
+        >
+          {description}
+        </Text>
+      </View>
+      <View
+        style={[
+          styles.radio,
+          selected
+            ? { backgroundColor: isDark ? colors.onAccent : colors.accent }
+            : [inset(), { backgroundColor: isDark ? colors.surfacePressed : colors.base }],
+        ]}
+      >
+        {selected ? (
+          <Feather
+            name="check"
+            size={15}
+            color={isDark ? colors.accent : colors.onAccent}
+            accessible={false}
+          />
+        ) : null}
+      </View>
+    </PressableScale>
+  );
+};
 
 const styles = StyleSheet.create({
   row: {
@@ -40,7 +100,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 16,
     borderRadius: 24,
-    backgroundColor: colors.base,
     paddingHorizontal: 20,
     marginTop: 16,
   },
@@ -51,16 +110,11 @@ const styles = StyleSheet.create({
     fontFamily: fonts.outfitSemiBold,
     fontSize: 17,
     fontWeight: '600',
-    color: colors.ink,
-  },
-  labelOn: {
-    color: colors.accent,
   },
   description: {
     ...typography.caption,
     fontFamily: fonts.manropeBold,
     fontWeight: '600',
-    color: colors.muted,
     marginTop: 2,
   },
   radio: {
@@ -69,9 +123,5 @@ const styles = StyleSheet.create({
     borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.base,
-  },
-  radioOn: {
-    backgroundColor: colors.accent,
   },
 });

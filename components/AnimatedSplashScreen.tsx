@@ -12,7 +12,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import * as SplashScreen from 'expo-splash-screen';
 import Svg, { Circle, Defs, RadialGradient, Stop } from 'react-native-svg';
-import { colors } from '@/theme/colors';
+import { useTheme } from '@/hooks/useTheme';
 import { fonts } from '@/theme/fonts';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -49,12 +49,6 @@ type SplashBlob = {
   top: `${number}%`;
 };
 
-const BLOBS: SplashBlob[] = [
-  { size: 280, color: colors.blobMint, left: -70, top: '15%' },
-  { size: 260, color: colors.blobViolet, right: -30, top: '29%' },
-  { size: 240, color: colors.blobPeach, left: 90, top: '58%' },
-];
-
 const SplashBlobCircle = ({ blob, id }: { blob: SplashBlob; id: string }) => (
   <View
     pointerEvents="none"
@@ -87,17 +81,19 @@ const AnimatedWord = ({
   text,
   opacity,
   translateY,
+  color,
 }: {
   text: string;
   opacity: SharedValue<number>;
   translateY: SharedValue<number>;
+  color: string;
 }) => {
   const style = useAnimatedStyle(() => ({
     opacity: opacity.value,
     transform: [{ translateY: translateY.value }],
   }));
   return (
-    <Animated.Text style={[styles.headlineWord, style]} accessible={false}>
+    <Animated.Text style={[styles.headlineWord, style, { color }]} accessible={false}>
       {text}
     </Animated.Text>
   );
@@ -108,6 +104,12 @@ export const AnimatedSplashScreen = ({
   children,
   ready = true,
 }: AnimatedSplashScreenProps) => {
+  const { colors } = useTheme();
+  const blobs: SplashBlob[] = [
+    { size: 280, color: colors.blobMint, left: -70, top: '15%' },
+    { size: 260, color: colors.blobViolet, right: -30, top: '29%' },
+    { size: 240, color: colors.blobPeach, left: 90, top: '58%' },
+  ];
   const [animationDone, setAnimationDone] = useState(false);
   const [timedOut, setTimedOut] = useState(false);
   const [laidOut, setLaidOut] = useState(false);
@@ -220,7 +222,7 @@ export const AnimatedSplashScreen = ({
       {children}
       {!animationDone ? (
         <Animated.View
-          style={[styles.overlay, overlayStyle]}
+          style={[styles.overlay, overlayStyle, { backgroundColor: colors.bg }]}
           pointerEvents="none"
           onLayout={() => {
             setLaidOut(true);
@@ -228,8 +230,8 @@ export const AnimatedSplashScreen = ({
           }}
         >
           <Animated.View style={[StyleSheet.absoluteFill, blobsStyle]} accessible={false}>
-            {BLOBS.map((blob, index) => (
-              <SplashBlobCircle key={blob.color} blob={blob} id={`splash-blob-${index}`} />
+            {blobs.map((blob, index) => (
+              <SplashBlobCircle key={`${blob.color}-${index}`} blob={blob} id={`splash-blob-${index}`} />
             ))}
           </Animated.View>
           <View style={styles.column}>
@@ -247,15 +249,17 @@ export const AnimatedSplashScreen = ({
               accessibilityLabel="Eat well, track softly"
             >
               <View style={styles.headlineRow}>
-                <AnimatedWord text={WORDS[0]} opacity={word0o} translateY={word0y} />
-                <AnimatedWord text={WORDS[1]} opacity={word1o} translateY={word1y} />
+                <AnimatedWord text={WORDS[0]} opacity={word0o} translateY={word0y} color={colors.ink} />
+                <AnimatedWord text={WORDS[1]} opacity={word1o} translateY={word1y} color={colors.ink} />
               </View>
               <View style={styles.headlineRow}>
-                <AnimatedWord text={WORDS[2]} opacity={word2o} translateY={word2y} />
-                <AnimatedWord text={WORDS[3]} opacity={word3o} translateY={word3y} />
+                <AnimatedWord text={WORDS[2]} opacity={word2o} translateY={word2y} color={colors.ink} />
+                <AnimatedWord text={WORDS[3]} opacity={word3o} translateY={word3y} color={colors.ink} />
               </View>
             </View>
-            <Animated.Text style={[styles.wordmark, wordmarkStyle]}>mealytics</Animated.Text>
+            <Animated.Text style={[styles.wordmark, wordmarkStyle, { color: colors.inkSecondary }]}>
+              mealytics
+            </Animated.Text>
           </View>
         </Animated.View>
       ) : null}
@@ -273,7 +277,6 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     left: 0,
-    backgroundColor: colors.base,
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 99999,
@@ -307,7 +310,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     letterSpacing: -1.6,
     lineHeight: HEADLINE_LINE_HEIGHT,
-    color: colors.ink,
     textAlign: 'center',
   },
   wordmark: {
@@ -317,6 +319,5 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     letterSpacing: -0.6,
     lineHeight: WORDMARK_HEIGHT,
-    color: colors.muted,
   },
 });

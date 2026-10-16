@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { useColorScheme } from 'react-native';
 import { useThemeStore } from '@/store/themeStore';
-import { resolveScheme } from '@/hooks/useThemeColors';
+import { resolveScheme } from '@/hooks/useTheme';
 import { setActiveColors } from '@/theme/runtime';
 
 export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
@@ -9,9 +9,8 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
   const system = useColorScheme();
   const scheme = resolveScheme(preference, system);
 
-  useEffect(() => {
-    setActiveColors(scheme);
-  }, [scheme]);
+  // Sync before paint so shadow helpers (isDarkScheme) match useTheme() on the same frame.
+  setActiveColors(scheme);
 
   useEffect(() => {
     if (useThemeStore.persist.hasHydrated()) {

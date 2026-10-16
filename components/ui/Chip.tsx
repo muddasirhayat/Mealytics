@@ -1,9 +1,11 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text } from 'react-native';
-import { useThemeColors } from '@/hooks/useThemeColors';
-import { radius } from '@/theme/radius';
+import { StyleSheet, Text } from 'react-native';
+import { useTheme } from '@/hooks/useTheme';
 import { typography } from '@/theme/typography';
 import { inset, raiseSm } from '@/utils/shadow';
+import { PressableScale } from '@/components/ui/PressableScale';
+import { emitSelectionHaptic } from '@/hooks/useTickFeedback';
+import { usePreferencesStore } from '@/store/preferencesStore';
 
 type ChipProps = {
   label: string;
@@ -12,21 +14,46 @@ type ChipProps = {
 };
 
 export const Chip = ({ label, selected = false, onPress }: ChipProps) => {
-  const colors = useThemeColors();
+  const { colors, isDark } = useTheme();
+  const soundsOn = usePreferencesStore((s) => s.soundsAndHaptics);
+
   return (
-    <Pressable
-      onPress={onPress}
+    <PressableScale
+      onPress={() => {
+        emitSelectionHaptic(soundsOn);
+        onPress?.();
+      }}
       accessibilityRole="button"
       accessibilityState={{ selected }}
       accessibilityLabel={label}
       style={[
         styles.chip,
-        { backgroundColor: colors.base },
-        selected ? inset() : raiseSm(),
+        selected
+          ? isDark
+            ? { backgroundColor: colors.accent, borderWidth: 0 }
+            : [inset(), { backgroundColor: colors.base }]
+          : isDark
+            ? { backgroundColor: colors.surfaceRaised, borderWidth: 0 }
+            : [raiseSm(), { backgroundColor: colors.base }],
       ]}
     >
-      <Text style={[styles.text, { color: selected ? colors.accent : colors.ink }]}>{label}</Text>
-    </Pressable>
+      <Text
+        style={[
+          styles.text,
+          {
+            color: selected
+              ? isDark
+                ? colors.onAccent
+                : colors.accent
+              : isDark
+                ? colors.inkSecondary
+                : colors.ink,
+          },
+        ]}
+      >
+        {label}
+      </Text>
+    </PressableScale>
   );
 };
 
@@ -34,10 +61,10 @@ const styles = StyleSheet.create({
   chip: {
     height: 40,
     paddingHorizontal: 16,
-    borderRadius: radius.chip,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 44,
+    minHeight: 40,
   },
   text: {
     ...typography.chip,

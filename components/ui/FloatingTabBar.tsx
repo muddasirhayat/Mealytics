@@ -1,13 +1,20 @@
-import React from 'react';
-import { Platform, Pressable, StyleSheet, Text, type View as RNView } from 'react-native';
+import React, { useEffect } from 'react';
+import { Platform, StyleSheet, Text, type View as RNView } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useResolvedScheme, useThemeColors } from '@/hooks/useThemeColors';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from 'react-native-reanimated';
+import { useTheme } from '@/hooks/useTheme';
+import { motion } from '@/constants/motion';
 import { radius } from '@/theme/radius';
 import { typography } from '@/theme/typography';
 import { centerTabShadow } from '@/utils/shadow';
+import { PressableScale } from '@/components/ui/PressableScale';
 import {
   TAB_BAR_BOTTOM_OFFSET,
   TAB_BAR_HEIGHT,
@@ -41,15 +48,37 @@ type FloatingTabBarProps = {
   blurTargetRef: React.RefObject<RNView | null>;
 };
 
+const TabIcon = ({
+  focused,
+  color,
+  icon,
+}: {
+  focused: boolean;
+  color: string;
+  icon: keyof typeof Feather.glyphMap;
+}) => {
+  const scale = useSharedValue(focused ? 1.08 : 1);
+  useEffect(() => {
+    scale.value = withSpring(focused ? 1.08 : 1, motion.spring);
+  }, [focused, scale]);
+  const style = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+  return (
+    <Animated.View style={style}>
+      <Feather name={icon} size={23} color={color} accessible={false} />
+    </Animated.View>
+  );
+};
+
 function FloatingTabBarInner({ state, navigation, blurTargetRef }: FloatingTabBarProps) {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const colors = useThemeColors();
-  const scheme = useResolvedScheme();
+  const { colors, isDark } = useTheme();
 
   return (
     <BlurView
-      tint={scheme === 'dark' ? 'dark' : 'light'}
+      tint={isDark ? 'dark' : 'light'}
       intensity={Platform.OS === 'android' ? 22 : 40}
       blurTarget={blurTargetRef}
       blurMethod="dimezisBlurViewSdk31Plus"
@@ -57,19 +86,19 @@ function FloatingTabBarInner({ state, navigation, blurTargetRef }: FloatingTabBa
         styles.bar,
         {
           bottom: TAB_BAR_BOTTOM_OFFSET + insets.bottom,
-          backgroundColor: colors.glass,
-          borderColor: colors.glassBorder,
+          backgroundColor: isDark ? colors.tabBarGlass : colors.glass,
+          borderColor: isDark ? colors.border : colors.glassBorder,
         },
       ]}
     >
       {ITEMS.map((item) => {
         const routeIndex = state.routes.findIndex((route) => route.name === item.routeName);
         const focused = state.index === routeIndex;
-        const color = focused ? colors.accent : colors.muted;
+        const color = focused ? colors.accent : colors.inkSecondary;
 
         if (item.routeName === 'add') {
           return (
-            <Pressable
+            <PressableScale
               key={item.routeName}
               onPress={() => router.push('/search')}
               accessibilityRole="button"
@@ -77,13 +106,13 @@ function FloatingTabBarInner({ state, navigation, blurTargetRef }: FloatingTabBa
               hitSlop={6}
               style={[styles.center, centerTabShadow(), { backgroundColor: colors.accent }]}
             >
-              <Feather name="plus" size={28} color={colors.textInverse} accessible={false} />
-            </Pressable>
+              <Feather name="plus" size={28} color={colors.onAccent} accessible={false} />
+            </PressableScale>
           );
         }
 
         return (
-          <Pressable
+          <PressableScale
             key={item.routeName}
             onPress={() => {
               const route = state.routes[routeIndex];
@@ -102,9 +131,9 @@ function FloatingTabBarInner({ state, navigation, blurTargetRef }: FloatingTabBa
             accessibilityLabel={item.label}
             style={styles.item}
           >
-            <Feather name={item.icon} size={23} color={color} accessible={false} />
+            <TabIcon focused={focused} color={color} icon={item.icon} />
             <Text style={[styles.label, { color }]}>{item.label}</Text>
-          </Pressable>
+          </PressableScale>
         );
       })}
     </BlurView>

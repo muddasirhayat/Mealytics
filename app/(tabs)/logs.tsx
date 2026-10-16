@@ -1,11 +1,5 @@
-import React, { useCallback, useMemo, useState } from 'react';
-import {
-  Pressable,
-  SectionList,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import React, { memo, useCallback, useMemo, useState } from 'react';
+import { SectionList, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { mealStorage } from '@/storage/mealStorage';
@@ -18,17 +12,19 @@ import {
   GlassCard,
   IconSquare,
   MacroDots,
+  PressableScale,
   RaisedCard,
   Screen,
   ScreenHeader,
 } from '@/components/ui';
 import { MEAL_SLOTS, getMealSlot, getMealSlotLabel } from '@/utils/mealSlot';
 import { formatFoodServing } from '@/utils/nutrition';
-import { colors } from '@/theme/colors';
+import { useTheme } from '@/hooks/useTheme';
 import { fonts } from '@/theme/fonts';
 import { typography } from '@/theme/typography';
-import { inset, raiseSm } from '@/utils/shadow';
+import { inset, raiseList, raiseSm } from '@/utils/shadow';
 import { useTabBarSpace } from '@/constants/layout';
+import type { ThemeColors } from '@/theme/palette';
 
 const DAY_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
@@ -65,9 +61,53 @@ type SlotSection = {
   data: FoodRow[];
 };
 
+const FoodRowItem = memo(function FoodRowItem({
+  item,
+  colors,
+  isDark,
+  onDelete,
+}: {
+  item: FoodRow;
+  colors: ThemeColors;
+  isDark: boolean;
+  onDelete: (mealId: string, index: number, name: string) => void;
+}) {
+  return (
+    <View style={styles.foodRow}>
+      <View style={styles.foodCopy}>
+        <Text style={[styles.foodName, { color: colors.ink }]}>{item.food.name}</Text>
+        <Text style={[styles.foodServing, { color: colors.inkSecondary }]}>
+          {formatFoodServing(item.food)}
+        </Text>
+        <MacroDots
+          protein={item.food.protein}
+          carbs={item.food.carbohydrates}
+          fat={item.food.fat}
+          fiber={item.food.fiber}
+        />
+      </View>
+      <Text style={[styles.foodKcal, { color: colors.ink }]}>{Math.round(item.food.calories)}</Text>
+      <PressableScale
+        onPress={() => onDelete(item.mealId, item.index, item.food.name)}
+        accessibilityRole="button"
+        accessibilityLabel={`Delete ${item.food.name}`}
+        hitSlop={8}
+        style={[
+          styles.trash,
+          inset(),
+          { backgroundColor: isDark ? colors.surfaceRaised : colors.base },
+        ]}
+      >
+        <Feather name="trash-2" size={16} color={colors.danger} />
+      </PressableScale>
+    </View>
+  );
+});
+
 export default function LogsScreen() {
   const router = useRouter();
   const tabBarSpace = useTabBarSpace();
+  const { colors, isDark } = useTheme();
   const goals = useUserStore((state) => state.goals);
   const today = useMemo(() => {
     const now = new Date();
@@ -130,32 +170,40 @@ export default function LogsScreen() {
     ? Math.round(loggedDays.reduce((sum, kcal) => sum + kcal, 0) / loggedDays.length)
     : 0;
 
-  const dayTotals = meals.reduce(
-    (acc, meal) => {
-      acc.kcal += meal.totalCalories;
-      acc.protein += meal.totalProtein;
-      acc.carbs += meal.totalCarbohydrates;
-      acc.fat += meal.totalFat;
-      acc.fiber += meal.foods.reduce((sum, food) => sum + (food.fiber ?? 0), 0);
-      return acc;
-    },
-    { kcal: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 }
+  const dayTotals = useMemo(
+    () =>
+      meals.reduce(
+        (acc, meal) => {
+          acc.kcal += meal.totalCalories;
+          acc.protein += meal.totalProtein;
+          acc.carbs += meal.totalCarbohydrates;
+          acc.fat += meal.totalFat;
+          acc.fiber += meal.foods.reduce((sum, food) => sum + (food.fiber ?? 0), 0);
+          return acc;
+        },
+        { kcal: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 }
+      ),
+    [meals]
   );
 
-  const sections: SlotSection[] = MEAL_SLOTS.map((slot) => {
-    const slotMeals = meals.filter((meal) => getMealSlot(meal) === slot.id);
-    const data: FoodRow[] = [];
-    slotMeals.forEach((meal) => {
-      meal.foods.forEach((food, index) => {
-        data.push({ mealId: meal.id, index, food });
-      });
-    });
-    return {
-      title: getMealSlotLabel(slot.id),
-      slotKcal: slotMeals.reduce((sum, meal) => sum + meal.totalCalories, 0),
-      data,
-    };
-  }).filter((section) => section.data.length > 0);
+  const sections: SlotSection[] = useMemo(
+    () =>
+      MEAL_SLOTS.map((slot) => {
+        const slotMeals = meals.filter((meal) => getMealSlot(meal) === slot.id);
+        const data: FoodRow[] = [];
+        slotMeals.forEach((meal) => {
+          meal.foods.forEach((food, index) => {
+            data.push({ mealId: meal.id, index, food });
+          });
+        });
+        return {
+          title: getMealSlotLabel(slot.id),
+          slotKcal: slotMeals.reduce((sum, meal) => sum + meal.totalCalories, 0),
+          data,
+        };
+      }).filter((section) => section.data.length > 0),
+    [meals]
+  );
 
   const dateLabel = selectedDate.toLocaleDateString('en-US', {
     weekday: 'short',
@@ -163,9 +211,16 @@ export default function LogsScreen() {
     day: 'numeric',
   });
 
-  const handleDeleteFood = (mealId: string, index: number, name: string) => {
+  const handleDeleteFood = useCallback((mealId: string, index: number, name: string) => {
     setPendingDelete({ mealId, index, name });
-  };
+  }, []);
+
+  const renderItem = useCallback(
+    ({ item }: { item: FoodRow }) => (
+      <FoodRowItem item={item} colors={colors} isDark={isDark} onDelete={handleDeleteFood} />
+    ),
+    [colors, handleDeleteFood, isDark]
+  );
 
   return (
     <Screen padded={false}>
@@ -178,13 +233,11 @@ export default function LogsScreen() {
           <View>
             <ScreenHeader
               title="Logs"
-              right={
-                <IconSquare name="calendar" accessibilityLabel="Calendar" />
-              }
+              right={<IconSquare name="calendar" accessibilityLabel="Calendar" />}
             />
             <GlassCard padding={18} radiusValue={28} style={styles.weekCard}>
-              <Text style={styles.weekTitle}>This week</Text>
-              <Text style={styles.weekMeta}>
+              <Text style={[styles.weekTitle, { color: colors.ink }]}>This week</Text>
+              <Text style={[styles.weekMeta, { color: colors.inkSecondary }]}>
                 Avg {avg.toLocaleString()} · Goal {goal ? goal.toLocaleString() : '—'}
               </Text>
               <View style={styles.bars}>
@@ -193,7 +246,15 @@ export default function LogsScreen() {
                   const fill = goal > 0 ? Math.min(1, weekKcal[index] / goal) : 0;
                   return (
                     <View key={day.toDateString()} style={styles.barCol}>
-                      <View style={[styles.barTrack, inset()]}>
+                      <View
+                        style={[
+                          styles.barTrack,
+                          inset(),
+                          {
+                            backgroundColor: isDark ? colors.surfaceRaised : colors.base,
+                          },
+                        ]}
+                      >
                         <View
                           style={[
                             styles.barFill,
@@ -204,7 +265,9 @@ export default function LogsScreen() {
                           ]}
                         />
                       </View>
-                      <Text style={styles.barLabel}>{DAY_LABELS[day.getDay()]}</Text>
+                      <Text style={[styles.barLabel, { color: colors.inkSecondary }]}>
+                        {DAY_LABELS[day.getDay()]}
+                      </Text>
                     </View>
                   );
                 })}
@@ -212,7 +275,7 @@ export default function LogsScreen() {
             </GlassCard>
 
             <View style={styles.stripRow}>
-              <Pressable
+              <PressableScale
                 onPress={() => shiftWeek(-1)}
                 accessibilityRole="button"
                 accessibilityLabel="Previous week"
@@ -220,13 +283,13 @@ export default function LogsScreen() {
                 style={styles.arrow}
               >
                 <Feather name="chevron-left" size={20} color={colors.ink} />
-              </Pressable>
+              </PressableScale>
               {week.map((day) => {
                 const selected = isSameDay(day, selectedDate);
                 const future = day > today;
                 const hasMeals = daysWithMeals.has(day.toDateString());
                 return (
-                  <Pressable
+                  <PressableScale
                     key={day.toDateString()}
                     disabled={future}
                     onPress={() => {
@@ -238,21 +301,56 @@ export default function LogsScreen() {
                     accessibilityLabel={`${day.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}${hasMeals ? ', has meals' : ''}`}
                     style={[
                       styles.dayTile,
-                      selected ? inset() : raiseSm(),
+                      selected
+                        ? isDark
+                          ? { backgroundColor: colors.accent }
+                          : inset()
+                        : isDark
+                          ? [{ backgroundColor: colors.surfaceRaised }, raiseList()]
+                          : [raiseSm(), { backgroundColor: colors.base }],
                       future && styles.dayDisabled,
                     ]}
                   >
-                    <Text style={[styles.dayName, selected && styles.daySelectedText]}>
+                    <Text
+                      style={[
+                        styles.dayName,
+                        {
+                          color: selected
+                            ? isDark
+                              ? colors.onAccent
+                              : colors.accent
+                            : colors.inkSecondary,
+                        },
+                      ]}
+                    >
                       {DAY_LABELS[day.getDay()]}
                     </Text>
-                    <Text style={[styles.dayNum, selected && styles.daySelectedText]}>
+                    <Text
+                      style={[
+                        styles.dayNum,
+                        {
+                          color: selected
+                            ? isDark
+                              ? colors.onAccent
+                              : colors.accent
+                            : colors.ink,
+                        },
+                      ]}
+                    >
                       {day.getDate()}
                     </Text>
-                    <View style={[styles.dot, hasMeals && styles.dotOn, selected && styles.dotSelected]} />
-                  </Pressable>
+                    <View
+                      style={[
+                        styles.dot,
+                        hasMeals && { backgroundColor: colors.mint },
+                        selected && isDark && { backgroundColor: colors.onAccent },
+                        selected && !isDark && { backgroundColor: colors.accent },
+                      ]}
+                    />
+                  </PressableScale>
                 );
               })}
-              <Pressable
+              <PressableScale
                 onPress={() => shiftWeek(1)}
                 accessibilityRole="button"
                 accessibilityLabel="Next week"
@@ -260,12 +358,12 @@ export default function LogsScreen() {
                 style={styles.arrow}
               >
                 <Feather name="chevron-right" size={20} color={colors.ink} />
-              </Pressable>
+              </PressableScale>
             </View>
 
             <RaisedCard padding={16} radiusValue={22} style={styles.summary}>
-              <Text style={styles.summaryDate}>{dateLabel}</Text>
-              <Text style={styles.summaryKcal}>
+              <Text style={[styles.summaryDate, { color: colors.ink }]}>{dateLabel}</Text>
+              <Text style={[styles.summaryKcal, { color: colors.ink }]}>
                 {Math.round(dayTotals.kcal)} / {goal || '—'} kcal
               </Text>
               <MacroDots
@@ -279,52 +377,27 @@ export default function LogsScreen() {
         }
         renderSectionHeader={({ section }) => (
           <RaisedCard padding={14} radiusValue={22} style={styles.slotHeader}>
-            <IconSquare name="coffee" />
-            <Text style={styles.slotTitle}>{section.title}</Text>
-            <Text style={styles.slotKcal}>{Math.round(section.slotKcal)} kcal</Text>
+            <IconSquare name="coffee" insetStyle={isDark} color={colors.ink} />
+            <Text style={[styles.slotTitle, { color: colors.ink }]}>{section.title}</Text>
+            <Text style={[styles.slotKcal, { color: colors.accent }]}>
+              {Math.round(section.slotKcal)} kcal
+            </Text>
           </RaisedCard>
         )}
-        renderItem={({ item }) => (
-          <View style={styles.foodRow}>
-            <View style={styles.foodCopy}>
-              <Text style={styles.foodName}>{item.food.name}</Text>
-              <Text style={styles.foodServing}>{formatFoodServing(item.food)}</Text>
-              <MacroDots
-                protein={item.food.protein}
-                carbs={item.food.carbohydrates}
-                fat={item.food.fat}
-                fiber={item.food.fiber}
-              />
-            </View>
-            <Text style={styles.foodKcal}>{Math.round(item.food.calories)}</Text>
-            <Pressable
-              onPress={() => handleDeleteFood(item.mealId, item.index, item.food.name)}
-              accessibilityRole="button"
-              accessibilityLabel={`Delete ${item.food.name}`}
-              hitSlop={8}
-              style={[styles.trash, inset()]}
-            >
-              <Feather name="trash-2" size={16} color={colors.danger} />
-            </Pressable>
-          </View>
-        )}
+        renderItem={renderItem}
         ListEmptyComponent={
-          <EmptyState
-            compact
-            icon="restaurant-outline"
-            message="No meals logged for this day."
-          />
+          <EmptyState compact icon="restaurant-outline" message="No meals logged for this day." />
         }
         ListFooterComponent={
           sections.length === 0 ? (
-            <Pressable
+            <PressableScale
               onPress={() => router.push('/search')}
               style={styles.cta}
               accessibilityRole="button"
               accessibilityLabel="Add food"
             >
-              <Text style={styles.ctaText}>Add food</Text>
-            </Pressable>
+              <Text style={[styles.ctaText, { color: colors.accent }]}>Add food</Text>
+            </PressableScale>
           ) : null
         }
       />
@@ -359,11 +432,9 @@ const styles = StyleSheet.create({
     fontFamily: fonts.outfitSemiBold,
     fontSize: 16,
     fontWeight: '600',
-    color: colors.ink,
   },
   weekMeta: {
     ...typography.caption,
-    color: colors.muted,
     marginTop: 4,
     marginBottom: 12,
   },
@@ -380,7 +451,6 @@ const styles = StyleSheet.create({
     width: 18,
     flex: 1,
     borderRadius: 10,
-    backgroundColor: colors.base,
     justifyContent: 'flex-end',
     overflow: 'hidden',
   },
@@ -392,7 +462,6 @@ const styles = StyleSheet.create({
     fontFamily: fonts.outfitSemiBold,
     fontSize: 11,
     fontWeight: '600',
-    color: colors.muted,
     marginTop: 6,
   },
   stripRow: {
@@ -411,7 +480,6 @@ const styles = StyleSheet.create({
     flex: 1,
     minHeight: 64,
     borderRadius: 16,
-    backgroundColor: colors.base,
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 8,
@@ -422,15 +490,10 @@ const styles = StyleSheet.create({
   dayName: {
     fontFamily: fonts.outfitSemiBold,
     fontSize: 11,
-    color: colors.muted,
   },
   dayNum: {
     fontFamily: fonts.outfitBold,
     fontSize: 16,
-    color: colors.ink,
-  },
-  daySelectedText: {
-    color: colors.accent,
   },
   dot: {
     width: 6,
@@ -438,12 +501,6 @@ const styles = StyleSheet.create({
     borderRadius: 3,
     marginTop: 4,
     backgroundColor: 'transparent',
-  },
-  dotOn: {
-    backgroundColor: colors.accent,
-  },
-  dotSelected: {
-    backgroundColor: colors.accent,
   },
   summary: {
     marginBottom: 16,
@@ -453,12 +510,10 @@ const styles = StyleSheet.create({
     fontFamily: fonts.outfitSemiBold,
     fontSize: 18,
     fontWeight: '600',
-    color: colors.ink,
   },
   summaryKcal: {
     fontFamily: fonts.outfitSemiBold,
     fontSize: 16,
-    color: colors.ink,
   },
   slotHeader: {
     flexDirection: 'row',
@@ -471,12 +526,10 @@ const styles = StyleSheet.create({
     flex: 1,
     fontFamily: fonts.outfitSemiBold,
     fontSize: 16,
-    color: colors.ink,
   },
   slotKcal: {
     fontFamily: fonts.outfitSemiBold,
     fontSize: 14,
-    color: colors.accent,
   },
   foodRow: {
     flexDirection: 'row',
@@ -491,16 +544,13 @@ const styles = StyleSheet.create({
   foodName: {
     fontFamily: fonts.outfitSemiBold,
     fontSize: 15.5,
-    color: colors.ink,
   },
   foodServing: {
     ...typography.caption,
-    color: colors.muted,
   },
   foodKcal: {
     fontFamily: fonts.outfitSemiBold,
     fontSize: 14,
-    color: colors.ink,
   },
   trash: {
     width: 44,
@@ -508,7 +558,6 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.base,
   },
   cta: {
     minHeight: 44,
@@ -519,6 +568,5 @@ const styles = StyleSheet.create({
   ctaText: {
     fontFamily: fonts.outfitSemiBold,
     fontSize: 16,
-    color: colors.accent,
   },
 });

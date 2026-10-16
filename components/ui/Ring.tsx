@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
-import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
-import { colors } from '@/theme/colors';
+import Svg, { Circle } from 'react-native-svg';
+import { useTheme } from '@/hooks/useTheme';
 import { inset } from '@/utils/shadow';
 
 type RingProps = {
@@ -12,34 +12,44 @@ type RingProps = {
 };
 
 export const Ring = ({ size = 160, stroke = 14, progress, children }: RingProps) => {
+  const { colors, isDark } = useTheme();
   const r = (size - stroke) / 2;
   const c = 2 * Math.PI * r;
   const clamped = Math.min(1, Math.max(0, progress));
   const dash = c * clamped;
+  // Tip of the arc for the accent dot
+  const angle = -Math.PI / 2 + clamped * 2 * Math.PI;
+  const tipX = size / 2 + r * Math.cos(angle);
+  const tipY = size / 2 + r * Math.sin(angle);
 
   return (
-    <View style={[styles.wrap, inset(), { width: size, height: size, borderRadius: size / 2 }]}>
+    <View
+      style={[
+        styles.wrap,
+        inset(),
+        {
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+          backgroundColor: isDark ? colors.surface : colors.base,
+        },
+      ]}
+    >
       <Svg width={size} height={size}>
-        <Defs>
-          <LinearGradient id="mealytics-ring" x1="0%" y1="0%" x2="100%" y2="100%">
-            <Stop offset="0%" stopColor={colors.mint} />
-            <Stop offset="100%" stopColor={colors.accent} />
-          </LinearGradient>
-        </Defs>
         <Circle
           cx={size / 2}
           cy={size / 2}
           r={r}
-          stroke={colors.fallbackBorder}
+          stroke={isDark ? colors.surfaceRaised : colors.fallbackBorder}
           strokeWidth={stroke}
           fill="none"
-          opacity={0.35}
+          opacity={isDark ? 1 : 0.35}
         />
         <Circle
           cx={size / 2}
           cy={size / 2}
           r={r}
-          stroke="url(#mealytics-ring)"
+          stroke={colors.accent}
           strokeWidth={stroke}
           fill="none"
           strokeDasharray={`${dash} ${c}`}
@@ -48,6 +58,19 @@ export const Ring = ({ size = 160, stroke = 14, progress, children }: RingProps)
           origin={`${size / 2}, ${size / 2}`}
         />
       </Svg>
+      {clamped > 0.02 ? (
+        <View
+          style={[
+            styles.tip,
+            {
+              left: tipX - 5,
+              top: tipY - 5,
+              backgroundColor: colors.accent,
+            },
+          ]}
+          accessible={false}
+        />
+      ) : null}
       <View style={styles.center} pointerEvents="none">
         {children}
       </View>
@@ -57,7 +80,6 @@ export const Ring = ({ size = 160, stroke = 14, progress, children }: RingProps)
 
 const styles = StyleSheet.create({
   wrap: {
-    backgroundColor: colors.base,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -65,5 +87,11 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFill,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  tip: {
+    position: 'absolute',
+    width: 10,
+    height: 10,
+    borderRadius: 5,
   },
 });

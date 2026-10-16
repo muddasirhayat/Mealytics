@@ -1,5 +1,7 @@
-import React, { useCallback, useMemo, useState } from 'react';
-import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
+import Animated, { FadeInDown, LinearTransition } from 'react-native-reanimated';
 import { useFocusEffect } from 'expo-router';
 import { useUserStore } from '@/store/userStore';
 import { mealStorage } from '@/storage/mealStorage';
@@ -9,7 +11,7 @@ import { QuickMealCard } from '@/components/QuickMealCard';
 import { DraftMealBanner } from '@/components/DraftMealBanner';
 import { Chip, IconSquare, Screen, ScreenHeader } from '@/components/ui';
 import { EmptyState, ErrorState } from '@/components/StateIndicators';
-import { colors } from '@/theme/colors';
+import { useTheme } from '@/hooks/useTheme';
 import { typography } from '@/theme/typography';
 import { useTabBarSpace } from '@/constants/layout';
 
@@ -22,12 +24,14 @@ const FILTERS = [
 
 export default function QuickMealsScreen() {
   const tabBarSpace = useTabBarSpace();
+  const { colors } = useTheme();
   const goals = useUserStore((state) => state.goals);
   const [filter, setFilter] = useState<(typeof FILTERS)[number]['id']>('all');
   const [meals, setMeals] = useState<QuickMeal[]>([]);
   const [todayKcal, setTodayKcal] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const animateOnce = useRef(true);
 
   const load = useCallback(async () => {
     try {
@@ -62,6 +66,32 @@ export default function QuickMealsScreen() {
     return `10 meal ideas for today · fit your ${kcalLeft} kcal left`;
   }, [kcalLeft]);
 
+  const renderItem = useCallback(
+    ({ item, index }: { item: QuickMeal; index: number }) => {
+      const shouldAnimate = animateOnce.current && index < 8;
+      const card = <QuickMealCard meal={item} kcalLeft={kcalLeft} />;
+      if (!shouldAnimate) return card;
+      return (
+        <Animated.View
+          entering={FadeInDown.springify().damping(18).delay(index * 30)}
+          layout={LinearTransition}
+        >
+          {card}
+        </Animated.View>
+      );
+    },
+    [kcalLeft]
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      const id = requestAnimationFrame(() => {
+        animateOnce.current = false;
+      });
+      return () => cancelAnimationFrame(id);
+    }, [])
+  );
+
   return (
     <Screen padded={false}>
       <View style={styles.header}>
@@ -69,14 +99,17 @@ export default function QuickMealsScreen() {
           title="Quick meals"
           right={<IconSquare name="sliders" onPress={() => setFilter('all')} accessibilityLabel="Filters" />}
         />
-        <Text style={styles.sub}>{subtitle}</Text>
+        <Text style={[styles.sub, { color: colors.inkSecondary }]}>{subtitle}</Text>
         <View style={styles.chips}>
           {FILTERS.map((item) => (
             <Chip
               key={item.id}
               label={item.label}
               selected={filter === item.id}
-              onPress={() => setFilter(item.id)}
+              onPress={() => {
+                animateOnce.current = true;
+                setFilter(item.id);
+              }}
             />
           ))}
         </View>
@@ -87,10 +120,10 @@ export default function QuickMealsScreen() {
       ) : error ? (
         <ErrorState compact message={error} onRetry={() => void load()} />
       ) : (
-        <FlatList
+        <FlashList
           data={meals}
           keyExtractor={(item) => item.id}
-          renderItem={({ item }) => <QuickMealCard meal={item} kcalLeft={kcalLeft} />}
+          renderItem={renderItem}
           contentContainerStyle={[styles.list, { paddingBottom: tabBarSpace + 16 }]}
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={<EmptyState compact message="No meals match this filter today." />}
@@ -107,7 +140,6 @@ const styles = StyleSheet.create({
   },
   sub: {
     ...typography.body,
-    color: colors.muted,
     marginBottom: 12,
   },
   chips: {

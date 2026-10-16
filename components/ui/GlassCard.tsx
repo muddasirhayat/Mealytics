@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, View, type ViewStyle } from 'react-native';
-import { useThemeColors } from '@/hooks/useThemeColors';
+import { useTheme } from '@/hooks/useTheme';
 import { radius } from '@/theme/radius';
 import { glassShadow } from '@/utils/shadow';
 
@@ -12,7 +12,7 @@ type GlassCardProps = {
 };
 
 export const GlassCard = ({ children, style, padding = 18, radiusValue = radius.glass }: GlassCardProps) => {
-  const colors = useThemeColors();
+  const { colors, isDark } = useTheme();
   return (
     <View
       style={[
@@ -21,7 +21,7 @@ export const GlassCard = ({ children, style, padding = 18, radiusValue = radius.
         {
           padding,
           borderRadius: radiusValue,
-          backgroundColor: colors.glass,
+          backgroundColor: isDark ? colors.surface : colors.glass,
           borderColor: colors.glassBorder,
         },
         style,
@@ -33,7 +33,5 @@ export const GlassCard = ({ children, style, padding = 18, radiusValue = radius.
 };
 
 const styles = StyleSheet.create({
-  card: {
-    borderWidth: 1,
-  },
+  card: { borderWidth: 1 },
 });

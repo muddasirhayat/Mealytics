@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { StyleSheet, Text, TextInput, View, type KeyboardTypeOptions } from 'react-native';
-import { useThemeColors } from '@/hooks/useThemeColors';
+import { useTheme } from '@/hooks/useTheme';
 import { radius } from '@/theme/radius';
 import { typography } from '@/theme/typography';
 import { inset } from '@/utils/shadow';
@@ -32,15 +32,26 @@ export const InsetField = ({
   accessibilityLabel,
   fullWidth = false,
 }: InsetFieldProps) => {
-  const colors = useThemeColors();
+  const { colors, isDark } = useTheme();
+  const [focused, setFocused] = useState(false);
+
   return (
     <View style={[styles.wrap, fullWidth && styles.fullWidth]}>
-      <Text style={[styles.label, { color: colors.muted }]}>{label}</Text>
+      <Text style={[styles.label, { color: colors.inkSecondary }]}>{label}</Text>
       <View
         style={[
           styles.field,
-          inset(),
-          { height: Math.max(height, 44), backgroundColor: colors.base },
+          isDark
+            ? {
+                backgroundColor: colors.surfaceRaised,
+                borderWidth: focused ? 1.5 : 1,
+                borderColor: focused ? colors.accent : colors.border,
+                boxShadow: [
+                  { offsetX: 0, offsetY: 2, blurRadius: 6, color: 'rgba(0,0,0,0.45)', inset: true },
+                ],
+              }
+            : [inset(), { backgroundColor: colors.base }],
+          { height: Math.max(height, 44) },
         ]}
       >
         <TextInput
@@ -48,12 +59,16 @@ export const InsetField = ({
           value={value}
           onChangeText={onChangeText}
           placeholder={placeholder}
-          placeholderTextColor={colors.placeholder}
+          placeholderTextColor={colors.inkMuted}
+          selectionColor={colors.accent}
+          cursorColor={colors.accent}
           keyboardType={keyboardType}
           autoFocus={autoFocus}
           accessibilityLabel={accessibilityLabel ?? label}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
         />
-        {suffix ? <Text style={[styles.suffix, { color: colors.muted }]}>{suffix}</Text> : null}
+        {suffix ? <Text style={[styles.suffix, { color: colors.inkMuted }]}>{suffix}</Text> : null}
       </View>
       {error ? <Text style={[styles.error, { color: colors.danger }]}>{error}</Text> : null}
     </View>
@@ -61,35 +76,17 @@ export const InsetField = ({
 };
 
 const styles = StyleSheet.create({
-  wrap: {
-    flex: 1,
-    minWidth: 152,
-  },
-  fullWidth: {
-    width: '100%',
-    flexBasis: '100%',
-    minWidth: '100%',
-  },
-  label: {
-    ...typography.fieldLabel,
-    marginBottom: 7,
-    marginLeft: 4,
-  },
+  wrap: { flex: 1, minWidth: 152 },
+  fullWidth: { width: '100%', flexBasis: '100%', minWidth: '100%' },
+  label: { ...typography.fieldLabel, marginBottom: 7, marginLeft: 4 },
   field: {
     flexDirection: 'row',
     alignItems: 'center',
     borderRadius: radius.field,
     paddingHorizontal: 16,
   },
-  input: {
-    ...typography.fieldValue,
-    flex: 1,
-    paddingVertical: 0,
-  },
-  suffix: {
-    ...typography.fieldLabel,
-    marginLeft: 8,
-  },
+  input: { ...typography.fieldValue, flex: 1, paddingVertical: 0 },
+  suffix: { ...typography.fieldLabel, marginLeft: 8 },
   error: {
     ...typography.caption,
     fontFamily: typography.fieldLabel.fontFamily,

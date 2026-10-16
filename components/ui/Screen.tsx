@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, View, type ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useThemeColors } from '@/hooks/useThemeColors';
+import { useTheme } from '@/hooks/useTheme';
 import { spacing } from '@/theme/spacing';
 import { BlobBackground } from '@/components/ui/BlobBackground';
 
@@ -21,12 +21,16 @@ export const Screen = ({
   edges = { top: true, bottom: false },
 }: ScreenProps) => {
   const insets = useSafeAreaInsets();
-  const colors = useThemeColors();
+  const { colors } = useTheme();
   return (
     <View
       style={[
         styles.root,
-        { backgroundColor: colors.base, paddingTop: edges.top ? insets.top : 0, paddingBottom: edges.bottom ? insets.bottom : 0 },
+        {
+          backgroundColor: colors.bg,
+          paddingTop: edges.top ? insets.top : 0,
+          paddingBottom: edges.bottom ? insets.bottom : 0,
+        },
         style,
       ]}
     >
@@ -37,12 +41,8 @@ export const Screen = ({
 };
 
 const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-  },
-  content: {
-    flex: 1,
-  },
+  root: { flex: 1 },
+  content: { flex: 1 },
   padded: {
     paddingHorizontal: spacing.screenX,
     paddingTop: spacing.screenTop,

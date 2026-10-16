@@ -17,5 +17,8 @@ export { Slider } from './Slider';
 export { ToastProvider, useToast } from './Toast';
 export { ConfirmDialog } from './ConfirmDialog';
 export { GoalCelebration } from './GoalCelebration';
-export { FloatingTabBar } from './FloatingTabBar';
+export { PressableScale } from './PressableScale';
 export { LogoMark } from './LogoMark';
+// FloatingTabBar is intentionally NOT re-exported here — it imports expo-router,
+// and pulling it through this barrel during route load causes
+// "Cannot read property 'ErrorBoundary' of undefined".

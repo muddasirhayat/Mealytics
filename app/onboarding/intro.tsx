@@ -265,7 +265,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.6)',
+    borderBottomColor: colors.divider,
   },
   flex: { flex: 1 },
   foodName: {

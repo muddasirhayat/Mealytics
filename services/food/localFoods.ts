@@ -52,13 +52,23 @@ const loadFoods = (): Food[] => {
 };
 
 export const prefetchLocalFoods = (): void => {
-  const schedule =
-    typeof requestIdleCallback === 'function'
-      ? (task: () => void) => requestIdleCallback(() => task())
-      : (task: () => void) => setTimeout(task, 1);
-  schedule(() => {
-    loadFoods();
-  });
+  // Defer off the first frame so splash / route mount stay smooth.
+  const run = () => {
+    const schedule =
+      typeof requestIdleCallback === 'function'
+        ? (task: () => void) => requestIdleCallback(() => task())
+        : (task: () => void) => setTimeout(task, 1);
+    schedule(() => {
+      loadFoods();
+    });
+  };
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { InteractionManager } = require('react-native') as typeof import('react-native');
+    InteractionManager.runAfterInteractions(run);
+  } catch {
+    run();
+  }
 };
 
 const splitWords = (name: string): string[] =>

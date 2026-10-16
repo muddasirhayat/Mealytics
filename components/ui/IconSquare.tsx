@@ -1,9 +1,10 @@
 import React from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { useThemeColors } from '@/hooks/useThemeColors';
+import { useTheme } from '@/hooks/useTheme';
 import { radius } from '@/theme/radius';
 import { inset, raiseSm } from '@/utils/shadow';
+import { PressableScale } from '@/components/ui/PressableScale';
 
 type IconSquareProps = {
   name: keyof typeof Feather.glyphMap;
@@ -24,14 +25,15 @@ export const IconSquare = ({
   color,
   accessibilityLabel,
 }: IconSquareProps) => {
-  const colors = useThemeColors();
+  const { colors, isDark } = useTheme();
   const iconColor = color ?? colors.ink;
+  const bg = isDark ? colors.surfaceRaised : colors.base;
   const inner = (
     <View
       style={[
         styles.box,
-        { backgroundColor: colors.base },
-        insetStyle ? inset() : raiseSm(),
+        { backgroundColor: bg },
+        insetStyle || isDark ? inset() : raiseSm(),
         { width: size, height: size, borderRadius: radius.icon },
       ]}
     >
@@ -39,20 +41,18 @@ export const IconSquare = ({
     </View>
   );
 
-  if (!onPress) {
-    return inner;
-  }
+  if (!onPress) return inner;
 
   return (
-    <Pressable
+    <PressableScale
       onPress={onPress}
       hitSlop={4}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel ?? name}
-      style={({ pressed }) => [pressed && styles.pressed, { minWidth: 44, minHeight: 44, justifyContent: 'center' }]}
+      style={{ minWidth: 44, minHeight: 44, justifyContent: 'center' }}
     >
       {inner}
-    </Pressable>
+    </PressableScale>
   );
 };
 
@@ -60,8 +60,5 @@ const styles = StyleSheet.create({
   box: {
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  pressed: {
-    transform: [{ scale: 0.98 }],
   },
 });

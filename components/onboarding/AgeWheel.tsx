@@ -1,10 +1,10 @@
 import React, { useRef } from 'react';
 import { FlatList, StyleSheet, Text, View, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
-import { useThemeColors } from '@/hooks/useThemeColors';
+import { useTheme } from '@/hooks/useTheme';
 import { fonts } from '@/theme/fonts';
 import { inset } from '@/utils/shadow';
 import { AGE_MAX, AGE_MIN } from '@/constants/profileOptions';
-import { tickFeedback } from '@/utils/feedback';
+import { useTickFeedback } from '@/hooks/useTickFeedback';
 
 const ITEM_HEIGHT = 60;
 const VISIBLE = 5;
@@ -17,7 +17,8 @@ type AgeWheelProps = {
 };
 
 export const AgeWheel = ({ value, onChange }: AgeWheelProps) => {
-  const colors = useThemeColors();
+  const { colors, isDark } = useTheme();
+  const { tickIfChanged } = useTickFeedback();
   const listRef = useRef<FlatList<number>>(null);
   const lastEmitted = useRef(value);
   const clamped = Math.min(AGE_MAX, Math.max(AGE_MIN, value));
@@ -28,7 +29,7 @@ export const AgeWheel = ({ value, onChange }: AgeWheelProps) => {
     const next = AGES[Math.min(AGES.length - 1, Math.max(0, index))];
     if (next === undefined || next === lastEmitted.current) return;
     lastEmitted.current = next;
-    tickFeedback();
+    tickIfChanged(next, 5);
     onChange(next);
   };
 
@@ -48,7 +49,11 @@ export const AgeWheel = ({ value, onChange }: AgeWheelProps) => {
       accessibilityValue={{ min: AGE_MIN, max: AGE_MAX, now: clamped }}
     >
       <View
-        style={[styles.window, inset(), { backgroundColor: colors.base }]}
+        style={[
+          styles.window,
+          inset(),
+          { backgroundColor: isDark ? colors.surfaceRaised : colors.base },
+        ]}
         pointerEvents="none"
         accessible={false}
       />

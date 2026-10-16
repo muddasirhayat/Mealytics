@@ -2,7 +2,7 @@ import React, { useCallback, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router';
-import { useThemeColors } from '@/hooks/useThemeColors';
+import { useTheme } from '@/hooks/useTheme';
 import { fonts } from '@/theme/fonts';
 import { typography } from '@/theme/typography';
 import { raiseSm } from '@/utils/shadow';
@@ -18,7 +18,7 @@ type WaterTrackerCardProps = {
 };
 
 export const WaterTrackerCard = ({ dailyTargetMl = 2000 }: WaterTrackerCardProps) => {
-  const colors = useThemeColors();
+  const { colors, isDark } = useTheme();
   const [currentMl, setCurrentMl] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -74,7 +74,12 @@ export const WaterTrackerCard = ({ dailyTargetMl = 2000 }: WaterTrackerCardProps
           <Text style={[styles.sub, { color: colors.muted }]}>
             {loading ? 'Loading…' : `${currentMl.toLocaleString()} of ${dailyTargetMl.toLocaleString()} ml`}
           </Text>
-          <View style={[styles.track, { backgroundColor: colors.insetFill }]}>
+          <View
+            style={[
+              styles.track,
+              { backgroundColor: isDark ? colors.surfaceRaised : colors.insetFill },
+            ]}
+          >
             <View style={[styles.fill, { width: `${progress * 100}%`, backgroundColor: colors.carbs }]} />
           </View>
         </View>

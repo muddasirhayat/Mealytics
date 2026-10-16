@@ -112,7 +112,7 @@ const makeStyles = (colors: ThemeColors) =>
       fontFamily: fonts.manropeBold,
       fontSize: 12,
       fontWeight: '700',
-      color: colors.muted,
+      color: colors.inkSecondary,
       marginTop: 3,
     },
     macroWrap: {

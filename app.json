@@ -41,24 +41,32 @@
           "image": "./assets/brand/splash-icon.png",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#E6EBF2"
+          "backgroundColor": "#E6EBF2",
+          "dark": {
+            "image": "./assets/brand/splash-icon.png",
+            "backgroundColor": "#12151F"
+          }
         }
       ],
       "expo-status-bar",
       "expo-font",
       "expo-system-ui",
       "expo-audio",
+      "expo-image",
       [
         "expo-build-properties",
         {
           "android": {
             "enableMinifyInReleaseBuilds": true,
             "enableShrinkResourcesInReleaseBuilds": true,
-            "usesCleartextTraffic": false
+            "usesCleartextTraffic": false,
+            "newArchEnabled": true
+          },
+          "ios": {
+            "newArchEnabled": true
           }
         }
-      ],
-      "expo-audio"
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

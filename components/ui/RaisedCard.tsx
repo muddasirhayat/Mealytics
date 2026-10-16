@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, View, type ViewStyle } from 'react-native';
-import { useThemeColors } from '@/hooks/useThemeColors';
+import { useTheme } from '@/hooks/useTheme';
 import { radius } from '@/theme/radius';
 import { raise, raiseSm } from '@/utils/shadow';
 
@@ -19,12 +19,12 @@ export const RaisedCard = ({
   radiusValue = radius.card,
   small = true,
 }: RaisedCardProps) => {
-  const colors = useThemeColors();
+  const { colors, isDark } = useTheme();
   return (
     <View
       style={[
         styles.card,
-        { backgroundColor: colors.base },
+        { backgroundColor: isDark ? colors.surface : colors.base },
         small ? raiseSm() : raise(),
         { padding, borderRadius: radiusValue },
         style,

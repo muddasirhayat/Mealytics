@@ -1,14 +1,14 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { memo, useCallback, useEffect, useRef, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
-  Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
+import Animated, { FadeInDown, LinearTransition } from 'react-native-reanimated';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useFoodSearch } from '@/hooks/useFoodSearch';
@@ -20,6 +20,7 @@ import {
   IconSquare,
   MacroDots,
   PlusButton,
+  PressableScale,
   Screen,
   Segmented,
   TopBar,
@@ -31,7 +32,7 @@ import { formatFoodServing } from '@/utils/nutrition';
 import { createId } from '@/utils/id';
 import { recentSearchStorage } from '@/storage/recentSearches';
 import { FEATURES } from '@/constants/features';
-import { colors } from '@/theme/colors';
+import { useTheme } from '@/hooks/useTheme';
 import { fonts } from '@/theme/fonts';
 import { typography } from '@/theme/typography';
 import { inset } from '@/utils/shadow';
@@ -45,8 +46,69 @@ const SLOTS: { label: string; value: MealSlot }[] = [
   { label: 'Snacks', value: 'snacks' },
 ];
 
+const SearchResultRow = memo(function SearchResultRow({
+  food,
+  index,
+  added,
+  onOpen,
+  onQuickAdd,
+  showDivider,
+  animateIn,
+}: {
+  food: Food;
+  index: number;
+  added: boolean;
+  onOpen: (food: Food) => void;
+  onQuickAdd: (food: Food) => void;
+  showDivider: boolean;
+  animateIn: boolean;
+}) {
+  const { colors } = useTheme();
+  const content = (
+    <PressableScale
+      onPress={() => onOpen(food)}
+      accessibilityRole="button"
+      accessibilityLabel={`${food.name}, ${Math.round(food.calories)} kilocalories`}
+      style={[
+        styles.result,
+        showDivider && { borderTopWidth: 1, borderTopColor: colors.divider },
+      ]}
+    >
+      <View style={styles.resultCopy}>
+        <Text style={[styles.resultName, { color: colors.ink }]}>{food.name}</Text>
+        <Text style={[styles.resultMeta, { color: colors.inkSecondary }]}>
+          {formatFoodServing(food)} · {Math.round(food.calories)} kcal
+          {food.dataSource === 'usda' ? '' : food.brand ? ` · ${food.brand}` : ''}
+        </Text>
+        <MacroDots
+          protein={food.protein}
+          carbs={food.carbohydrates}
+          fat={food.fat}
+          fiber={food.fiber}
+        />
+      </View>
+      <PlusButton
+        checked={added}
+        onPress={() => onQuickAdd(food)}
+        accessibilityLabel={`Quick add ${food.name}`}
+      />
+    </PressableScale>
+  );
+
+  if (!animateIn) return content;
+  return (
+    <Animated.View
+      entering={FadeInDown.springify().damping(18).delay(Math.min(index, 7) * 30)}
+      layout={LinearTransition}
+    >
+      {content}
+    </Animated.View>
+  );
+});
+
 export default function SearchScreen() {
   const router = useRouter();
+  const { colors, isDark } = useTheme();
   const params = useLocalSearchParams<{ slot?: string | string[] }>();
   const slotParam = Array.isArray(params.slot) ? params.slot[0] : params.slot;
   const { query, setQuery, results, isLoading, isPending, searchedQuery, error, searchFoods } =
@@ -57,7 +119,11 @@ export default function SearchScreen() {
   const removeFoodFromMeal = useMealStore((state) => state.removeFoodFromMeal);
   const { show } = useToast();
   const [recents, setRecents] = useState<string[]>([]);
-  const [addedIds, setAddedIds] = useState<Set<string>>(new Set());
+  const [addedIds, setAddedIds] = useState<Set<string>>(() => new Set());
+  const firstMount = useRef(true);
+  useEffect(() => {
+    firstMount.current = false;
+  }, []);
 
   useEffect(() => {
     if (isMealSlot(slotParam)) {
@@ -78,20 +144,46 @@ export default function SearchScreen() {
     [setQuery]
   );
 
-  const quickAdd = (food: Food) => {
-    const item = { ...food, id: createId() };
-    addFoodToMeal(item);
-    setAddedIds((prev) => new Set(prev).add(food.id));
-    show(`Added ${food.name}`, {
-      label: 'Undo',
-      onPress: () => removeFoodFromMeal(item.id),
-    });
-  };
+  const quickAdd = useCallback(
+    (food: Food) => {
+      const item = { ...food, id: createId() };
+      addFoodToMeal(item);
+      setAddedIds((prev) => new Set(prev).add(food.id));
+      show(`Added ${food.name}`, {
+        label: 'Undo',
+        onPress: () => removeFoodFromMeal(item.id),
+      });
+    },
+    [addFoodToMeal, removeFoodFromMeal, show]
+  );
+
+  const openFood = useCallback(
+    (food: Food) => {
+      void recentSearchStorage.add(query);
+      router.push(`/food/${food.id}`);
+    },
+    [query, router]
+  );
+
+  const renderItem = useCallback(
+    ({ item, index }: { item: Food; index: number }) => (
+      <SearchResultRow
+        food={item}
+        index={index}
+        added={addedIds.has(item.id)}
+        onOpen={openFood}
+        onQuickAdd={quickAdd}
+        showDivider={index > 0}
+        animateIn={firstMount.current || index < 8}
+      />
+    ),
+    [addedIds, openFood, quickAdd]
+  );
 
   const trimmed = query.trim();
-  let body: React.ReactNode = null;
+  let empty: React.ReactNode = null;
   if (trimmed.length === 0) {
-    body = (
+    empty = (
       <EmptyState
         compact
         icon="nutrition-outline"
@@ -99,56 +191,24 @@ export default function SearchScreen() {
       />
     );
   } else if (trimmed.length === 1) {
-    body = <EmptyState compact message="Type at least 2 letters" />;
+    empty = <EmptyState compact message="Type at least 2 letters" />;
   } else if ((isPending || isLoading) && results.length === 0) {
-    body = <LoadingState compact message="Searching foods..." />;
+    empty = <LoadingState compact message="Searching foods..." />;
   } else if (error && results.length === 0 && searchedQuery === trimmed && !isPending) {
-    body = <ErrorState compact message={error} onRetry={() => searchFoods(query)} />;
+    empty = <ErrorState compact message={error} onRetry={() => searchFoods(query)} />;
   } else if (!isPending && !isLoading && searchedQuery === trimmed && results.length === 0) {
-    body = (
+    empty = (
       <EmptyState compact message="No foods matched. Try another name, or add a custom food above." />
-    );
-  } else if (results.length > 0) {
-    body = (
-      <GlassCard padding={8} radiusValue={26}>
-        {results.map((food, index) => (
-          <Pressable
-            key={food.id}
-            onPress={() => {
-              void recentSearchStorage.add(query);
-              router.push(`/food/${food.id}`);
-            }}
-            accessibilityRole="button"
-            accessibilityLabel={`${food.name}, ${Math.round(food.calories)} kilocalories`}
-            style={[styles.result, index > 0 && styles.resultDivider]}
-          >
-            <View style={styles.resultCopy}>
-              <Text style={styles.resultName}>{food.name}</Text>
-              <Text style={styles.resultMeta}>
-                {formatFoodServing(food)} · {Math.round(food.calories)} kcal
-                {food.dataSource === 'usda' ? '' : food.brand ? ` · ${food.brand}` : ''}
-              </Text>
-              <MacroDots
-                protein={food.protein}
-                carbs={food.carbohydrates}
-                fat={food.fat}
-                fiber={food.fiber}
-              />
-            </View>
-            <PlusButton
-              checked={addedIds.has(food.id)}
-              onPress={() => quickAdd(food)}
-              accessibilityLabel={`Quick add ${food.name}`}
-            />
-          </Pressable>
-        ))}
-      </GlassCard>
     );
   }
 
   return (
     <Screen blobs="B1">
-      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior="padding"
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 8 : 0}
+      >
         <TopBar
           title="Search food"
           right={
@@ -157,22 +217,35 @@ export default function SearchScreen() {
             ) : undefined
           }
         />
-        <View style={[styles.searchRow, inset()]}>
-          <Feather name="search" size={18} color={colors.muted} accessible={false} />
+        <View
+          style={[
+            styles.searchRow,
+            inset(),
+            { backgroundColor: isDark ? colors.surfaceRaised : colors.base },
+          ]}
+        >
+          <Feather name="search" size={18} color={colors.inkMuted} accessible={false} />
           <TextInput
-            style={styles.input}
+            style={[styles.input, { color: colors.ink }]}
             value={query}
             onChangeText={setQuery}
             onSubmitEditing={() => void commitSearch(query)}
             placeholder="Search foods"
-            placeholderTextColor={colors.placeholder}
+            placeholderTextColor={colors.inkMuted}
+            selectionColor={colors.accent}
+            cursorColor={colors.accent}
             accessibilityLabel="Search foods"
             returnKeyType="search"
           />
           {query.length > 0 ? (
-            <Pressable onPress={() => setQuery('')} accessibilityRole="button" accessibilityLabel="Clear search" hitSlop={8}>
-              <Feather name="x" size={18} color={colors.muted} />
-            </Pressable>
+            <PressableScale
+              onPress={() => setQuery('')}
+              accessibilityRole="button"
+              accessibilityLabel="Clear search"
+              hitSlop={8}
+            >
+              <Feather name="x" size={18} color={colors.inkMuted} />
+            </PressableScale>
           ) : null}
         </View>
         {recents.length > 0 && trimmed.length === 0 ? (
@@ -182,17 +255,31 @@ export default function SearchScreen() {
             ))}
           </View>
         ) : null}
-        <Text style={styles.adding}>
-          Adding to: <Text style={styles.slot}>{getMealSlotLabel(draftSlot)}</Text>
+        <Text style={[styles.adding, { color: colors.ink }]}>
+          Adding to: <Text style={[styles.slot, { color: colors.accent }]}>{getMealSlotLabel(draftSlot)}</Text>
         </Text>
         <Segmented options={SLOTS} value={draftSlot} onChange={setDraftSlot} accessibilityLabel="Meal slot" />
-        <Pressable onPress={() => router.push('/food/custom')} style={styles.custom} accessibilityRole="button">
-          <Text style={styles.customText}>Add custom food</Text>
-        </Pressable>
+        <PressableScale
+          onPress={() => router.push('/food/custom')}
+          style={styles.custom}
+          accessibilityRole="button"
+        >
+          <Text style={[styles.customText, { color: colors.accent }]}>Add custom food</Text>
+        </PressableScale>
         <DraftMealBanner />
-        <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.body}>
-          {body}
-        </ScrollView>
+        {results.length > 0 ? (
+          <GlassCard padding={8} radiusValue={26} style={styles.listCard}>
+            <FlashList
+              data={results}
+              keyExtractor={(item) => item.id}
+              renderItem={renderItem}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+            />
+          </GlassCard>
+        ) : (
+          <View style={styles.body}>{empty}</View>
+        )}
       </KeyboardAvoidingView>
     </Screen>
   );
@@ -205,7 +292,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     height: 48,
     borderRadius: 16,
-    backgroundColor: colors.base,
     paddingHorizontal: 14,
     gap: 8,
     marginBottom: 12,
@@ -213,7 +299,6 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     ...typography.fieldValue,
-    color: colors.ink,
     paddingVertical: 0,
   },
   recents: {
@@ -224,11 +309,9 @@ const styles = StyleSheet.create({
   },
   adding: {
     ...typography.body,
-    color: colors.ink,
     marginBottom: 8,
   },
   slot: {
-    color: colors.accent,
     fontFamily: fonts.outfitSemiBold,
     fontWeight: '600',
   },
@@ -240,10 +323,13 @@ const styles = StyleSheet.create({
   customText: {
     fontFamily: fonts.outfitSemiBold,
     fontSize: 14,
-    color: colors.accent,
   },
   body: {
     paddingBottom: 24,
+  },
+  listCard: {
+    flex: 1,
+    minHeight: 200,
   },
   result: {
     flexDirection: 'row',
@@ -251,10 +337,6 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 8,
     gap: 8,
-  },
-  resultDivider: {
-    borderTopWidth: 1,
-    borderTopColor: colors.divider,
   },
   resultCopy: {
     flex: 1,
@@ -264,10 +346,8 @@ const styles = StyleSheet.create({
     fontFamily: fonts.outfitSemiBold,
     fontSize: 15.5,
     fontWeight: '600',
-    color: colors.ink,
   },
   resultMeta: {
     ...typography.caption,
-    color: colors.muted,
   },
 });

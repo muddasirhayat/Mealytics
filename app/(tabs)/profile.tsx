@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -23,8 +23,9 @@ import { parseDecimal, parseInteger, sanitizeDecimalInput, sanitizeIntegerInput 
 import { cmToFtIn, ftInToCm, kgToLbs, lbsToKg } from '@/utils/units';
 import { ACTIVITY_OPTIONS, AGE_MAX, AGE_MIN } from '@/constants/profileOptions';
 import { openExternalUrl } from '@/utils/linking';
-import { useThemeColors } from '@/hooks/useThemeColors';
+import { useTheme } from '@/hooks/useTheme';
 import { useThemeStore } from '@/store/themeStore';
+import { usePreferencesStore } from '@/store/preferencesStore';
 import type { ThemeColors, ThemePreference } from '@/theme/palette';
 import { fonts } from '@/theme/fonts';
 import { typography } from '@/theme/typography';
@@ -44,6 +45,9 @@ import {
 } from '@/components/ui';
 import { useToast } from '@/components/ui/Toast';
 import { raiseSm } from '@/utils/shadow';
+
+const SAVE_BUTTON_HEIGHT = 62;
+const SAVE_DOCK_PAD = 20;
 
 type FormFields = {
   name: string;
@@ -116,9 +120,11 @@ const GOALS: { label: string; value: GoalType }[] = [
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const colors = useThemeColors();
+  const { colors, isDark } = useTheme();
   const themePreference = useThemeStore((s) => s.preference);
   const setThemePreference = useThemeStore((s) => s.setPreference);
+  const soundsAndHaptics = usePreferencesStore((s) => s.soundsAndHaptics);
+  const setSoundsAndHaptics = usePreferencesStore((s) => s.setSoundsAndHaptics);
   const { profile, goals, saveProfile, isLoading, resetUser } = useUserStore();
   const clearDraftMeal = useMealStore((s) => s.clearDraftMeal);
   const resetOnboarding = useOnboardingStore((s) => s.reset);
@@ -189,13 +195,36 @@ export default function ProfileScreen() {
     ageNum === null || ageNum < AGE_MIN || ageNum > AGE_MAX
       ? `Enter an age between ${AGE_MIN} and ${AGE_MAX}.`
       : undefined;
-  const heightError = unitSystem === 'imperial'
-    ? (heightFtNum === null || heightInNum === null || heightFtNum < 3 || heightFtNum > 8 ? 'Enter a valid height.' : undefined)
-    : (heightCmNum === null || heightCmNum < 100 || heightCmNum > 250 ? 'Enter height in cm (100–250).' : undefined);
-  const weightError = unitSystem === 'imperial'
-    ? (weightNum === null || weightNum < 66 || weightNum > 660 ? 'Enter a valid weight in lbs.' : undefined)
-    : (weightNum === null || weightNum < 30 || weightNum > 300 ? 'Enter weight in kg (30–300).' : undefined);
-  const canSave = !nameError && !ageError && !heightError && !weightError;
+  const heightError =
+    unitSystem === 'imperial'
+      ? heightFtNum === null || heightInNum === null || heightFtNum < 3 || heightFtNum > 8
+        ? 'Enter a valid height.'
+        : undefined
+      : heightCmNum === null || heightCmNum < 100 || heightCmNum > 250
+        ? 'Enter height in cm (100–250).'
+        : undefined;
+  const weightError =
+    unitSystem === 'imperial'
+      ? weightNum === null || weightNum < 66 || weightNum > 660
+        ? 'Enter a valid weight in lbs.'
+        : undefined
+      : weightNum === null || weightNum < 30 || weightNum > 300
+        ? 'Enter weight in kg (30–300).'
+        : undefined;
+  const canSaveValid = !nameError && !ageError && !heightError && !weightError;
+
+  const baseline = useMemo(() => fieldsFromProfile(profile), [profile]);
+  const isDirty =
+    name !== baseline.name ||
+    age !== baseline.age ||
+    gender !== baseline.gender ||
+    unitSystem !== baseline.unitSystem ||
+    (unitSystem === 'metric' ? heightCm !== baseline.heightCm : heightFt !== baseline.heightFt || heightIn !== baseline.heightIn) ||
+    weightDisplay !== baseline.weightDisplay ||
+    activityLevel !== baseline.activityLevel ||
+    goalType !== baseline.goalType;
+
+  const canSave = canSaveValid && isDirty;
 
   const handleSave = async () => {
     if (!canSave || ageNum === null || weightNum === null) return;
@@ -243,6 +272,7 @@ export default function ProfileScreen() {
   const displayName = profile?.name ?? name;
   const initialLetter = (displayName.length > 0 ? displayName : '?').trim().charAt(0).toUpperCase();
   const goalLabel = goalType === 'lose' ? 'Lose' : goalType === 'gain' ? 'Gain muscle' : 'Maintain';
+  const scrollPadBottom = SAVE_BUTTON_HEIGHT + SAVE_DOCK_PAD + 24;
 
   if (isLoading) {
     return (
@@ -256,16 +286,34 @@ export default function ProfileScreen() {
     <Screen padded={false}>
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView
-          contentContainerStyle={styles.content}
+          style={styles.flex}
+          contentContainerStyle={[styles.content, { paddingBottom: scrollPadBottom }]}
           keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
           <ScreenHeader title="Profile" />
-          <GlassCard padding={18} radiusValue={28} style={styles.identity}>
-            <View style={[styles.avatar, raiseSm()]}>
+          <GlassCard
+            padding={18}
+            radiusValue={28}
+            style={{
+              ...styles.identity,
+              ...(isDark
+                ? { backgroundColor: colors.surface, borderColor: colors.border }
+                : null),
+            }}
+          >
+            <View
+              style={[
+                styles.avatar,
+                isDark
+                  ? { backgroundColor: colors.surfaceRaised, borderWidth: 1, borderColor: colors.border }
+                  : raiseSm(),
+              ]}
+            >
               <Text style={styles.avatarText}>{initialLetter}</Text>
             </View>
-            <Text style={styles.identityName}>{profile?.name || name || 'Your name'}</Text>
-            <Text style={styles.identityMeta}>
+            <Text style={[styles.identityName, { color: colors.ink }]}>{profile?.name || name || 'Your name'}</Text>
+            <Text style={[styles.identityMeta, { color: colors.inkSecondary }]}>
               {goalLabel} · {goals ? `${goals.targetCalories}/day` : '—'} · BMI{' '}
               <Text style={{ color: bmiCategory?.color ?? colors.ink }}>{goals?.bmi ?? '—'}</Text>
             </Text>
@@ -279,7 +327,10 @@ export default function ProfileScreen() {
                 ].map((item) => (
                   <View key={item.l} style={styles.macroItem}>
                     <View style={[styles.dot, { backgroundColor: item.c }]} />
-                    <Text style={styles.macroText}>{item.v}{item.l}</Text>
+                    <Text style={[styles.macroText, { color: colors.inkSecondary }]}>
+                      {item.v}
+                      {item.l}
+                    </Text>
                   </View>
                 ))}
               </View>
@@ -288,7 +339,10 @@ export default function ProfileScreen() {
 
           <Text style={styles.label}>Units</Text>
           <Segmented
-            options={[{ label: 'Metric', value: 'metric' }, { label: 'Imperial', value: 'imperial' }]}
+            options={[
+              { label: 'Metric', value: 'metric' },
+              { label: 'Imperial', value: 'imperial' },
+            ]}
             value={unitSystem}
             onChange={handleUnitToggle}
           />
@@ -321,8 +375,21 @@ export default function ProfileScreen() {
               />
             ) : (
               <View style={styles.heightRow}>
-                <InsetField label="Height" value={heightFt} onChangeText={(text) => setHeightFt(sanitizeIntegerInput(text))} keyboardType="number-pad" suffix="ft" />
-                <InsetField label=" " value={heightIn} onChangeText={(text) => setHeightIn(sanitizeIntegerInput(text))} keyboardType="number-pad" suffix="in" error={heightError} />
+                <InsetField
+                  label="Height"
+                  value={heightFt}
+                  onChangeText={(text) => setHeightFt(sanitizeIntegerInput(text))}
+                  keyboardType="number-pad"
+                  suffix="ft"
+                />
+                <InsetField
+                  label=" "
+                  value={heightIn}
+                  onChangeText={(text) => setHeightIn(sanitizeIntegerInput(text))}
+                  keyboardType="number-pad"
+                  suffix="in"
+                  error={heightError}
+                />
               </View>
             )}
             <InsetField
@@ -347,22 +414,52 @@ export default function ProfileScreen() {
             accessibilityLabel="Appearance"
           />
 
+          <Text style={styles.label}>Sounds & haptics</Text>
+          <Segmented
+            options={[
+              { label: 'On', value: 'on' },
+              { label: 'Off', value: 'off' },
+            ]}
+            value={soundsAndHaptics ? 'on' : 'off'}
+            onChange={(next) => setSoundsAndHaptics(next === 'on')}
+            accessibilityLabel="Sounds and haptics"
+          />
+
           <Text style={styles.label}>Gender</Text>
           <Segmented
-            options={[{ label: 'Male', value: 'male' }, { label: 'Female', value: 'female' }]}
+            options={[
+              { label: 'Male', value: 'male' },
+              { label: 'Female', value: 'female' },
+            ]}
             value={gender}
             onChange={setGender}
           />
+
           <Text style={styles.label}>Activity</Text>
-          <View style={styles.chips}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.chipsScroll}
+          >
             {ACTIVITY.map((item) => (
-              <Chip key={item.value} label={item.label} selected={activityLevel === item.value} onPress={() => setActivityLevel(item.value)} />
+              <Chip
+                key={item.value}
+                label={item.label}
+                selected={activityLevel === item.value}
+                onPress={() => setActivityLevel(item.value)}
+              />
             ))}
-          </View>
+          </ScrollView>
+
           <Text style={styles.label}>Goal</Text>
           <View style={styles.goalRow}>
             {GOALS.map((item) => (
-              <Chip key={item.value} label={item.label} selected={goalType === item.value} onPress={() => setGoalType(item.value)} />
+              <Chip
+                key={item.value}
+                label={item.label}
+                selected={goalType === item.value}
+                onPress={() => setGoalType(item.value)}
+              />
             ))}
           </View>
 
@@ -428,7 +525,7 @@ export default function ProfileScreen() {
         <Pressable style={styles.modalBg} onPress={() => setAboutOpen(false)}>
           <RaisedCard padding={22} radiusValue={24} style={styles.modalCard}>
             <LogoMark />
-            <Text style={styles.identityName}>About Mealytics</Text>
+            <Text style={[styles.identityName, { color: colors.ink }]}>About Mealytics</Text>
             <Text style={styles.aboutBody}>Version {Constants.expoConfig?.version ?? '1.0.0'}</Text>
             <Text style={styles.aboutBody}>Food data: USDA FoodData Central; Open Food Facts (ODbL).</Text>
             <Text style={styles.aboutBody}>Developer: Muddasir Hayat</Text>
@@ -466,7 +563,7 @@ const Row = ({
     style={[styles.rowItem, !last && styles.rowBorder]}
   >
     <Text style={[styles.rowLabel, danger && styles.danger]}>{label}</Text>
-    <Feather name="chevron-right" size={18} color={danger ? colors.danger : colors.muted} />
+    <Feather name="chevron-right" size={18} color={danger ? colors.danger : colors.inkMuted} />
   </Pressable>
 );
 
@@ -476,7 +573,6 @@ const makeStyles = (colors: ThemeColors) =>
     content: {
       paddingHorizontal: 24,
       paddingTop: 10,
-      paddingBottom: 16,
       gap: 14,
     },
     identity: { alignItems: 'center' },
@@ -497,11 +593,9 @@ const makeStyles = (colors: ThemeColors) =>
     identityName: {
       fontFamily: fonts.outfitBold,
       fontSize: 22,
-      color: colors.ink,
     },
     identityMeta: {
       ...typography.body,
-      color: colors.muted,
       marginTop: 4,
       textAlign: 'center',
     },
@@ -515,7 +609,6 @@ const makeStyles = (colors: ThemeColors) =>
     macroText: {
       fontFamily: fonts.manropeBold,
       fontSize: 12.5,
-      color: colors.muted,
     },
     grid: {
       flexDirection: 'row',
@@ -530,15 +623,23 @@ const makeStyles = (colors: ThemeColors) =>
     },
     saveDock: {
       paddingHorizontal: 24,
-      paddingTop: 12,
+      paddingTop: 8,
       paddingBottom: 8,
     },
     label: {
-      ...typography.fieldLabel,
-      color: colors.muted,
+      fontFamily: fonts.manropeSemiBold,
+      fontSize: 13,
+      fontWeight: '600',
+      color: colors.inkSecondary,
+      marginBottom: 8,
       marginTop: 4,
     },
-    chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+    chipsScroll: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+      paddingRight: 20,
+    },
     goalRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
     listCard: { marginTop: 8 },
     rowItem: {
@@ -557,7 +658,7 @@ const makeStyles = (colors: ThemeColors) =>
     danger: { color: colors.danger },
     footer: { alignItems: 'center', justifyContent: 'center', marginTop: 8, gap: 6 },
     footerHit: { minHeight: 44, justifyContent: 'center' },
-    footerText: { ...typography.caption, color: colors.muted, textAlign: 'center' },
+    footerText: { ...typography.caption, color: colors.inkMuted, textAlign: 'center' },
     modalBg: {
       flex: 1,
       backgroundColor: 'rgba(30,37,51,0.35)',
@@ -565,5 +666,5 @@ const makeStyles = (colors: ThemeColors) =>
       padding: 24,
     },
     modalCard: { gap: 12 },
-    aboutBody: { ...typography.body, color: colors.muted },
+    aboutBody: { ...typography.body, color: colors.inkSecondary },
   });

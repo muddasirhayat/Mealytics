@@ -8,12 +8,13 @@ import { useOnboardingStore } from '@/store/onboardingStore';
 import { safeBack } from '@/utils/navigation';
 import { HEIGHT_CM_MAX, HEIGHT_CM_MIN } from '@/constants/profileOptions';
 import { cmToFtIn, formatFtIn, ftInToCm } from '@/utils/units';
-import { colors } from '@/theme/colors';
+import { useTheme } from '@/hooks/useTheme';
 import { fonts } from '@/theme/fonts';
 import type { UnitSystem } from '@/types/user';
 
 export default function OnboardingHeight() {
   const router = useRouter();
+  const { colors } = useTheme();
   const heightCm = useOnboardingStore((s) => s.heightCm);
   const unitSystem = useOnboardingStore((s) => s.unitSystem);
   const patch = useOnboardingStore((s) => s.patch);
@@ -37,9 +38,9 @@ export default function OnboardingHeight() {
       onContinue={() => router.push('/onboarding/weight')}
     >
       <View style={styles.center}>
-        <Text style={styles.value} accessibilityLiveRegion="polite">
+        <Text style={[styles.value, { color: colors.ink }]} accessibilityLiveRegion="polite">
           {display}
-          {unit ? <Text style={styles.unit}> {unit}</Text> : null}
+          {unit ? <Text style={[styles.unit, { color: colors.inkMuted }]}> {unit}</Text> : null}
         </Text>
         <View style={styles.seg}>
           <Segmented
@@ -94,13 +95,11 @@ const styles = StyleSheet.create({
     fontSize: 64,
     fontWeight: '700',
     letterSpacing: -2,
-    color: colors.ink,
   },
   unit: {
     fontFamily: fonts.outfitSemiBold,
     fontSize: 20,
     fontWeight: '600',
-    color: colors.muted,
   },
   seg: {
     width: 180,

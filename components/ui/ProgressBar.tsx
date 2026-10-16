@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useThemeColors } from '@/hooks/useThemeColors';
+import { useTheme } from '@/hooks/useTheme';
 import { gradients } from '@/theme/colors';
 import { inset } from '@/utils/shadow';
 
@@ -18,10 +18,20 @@ export const ProgressBar = ({
   gradient = false,
   height = 12,
 }: ProgressBarProps) => {
-  const colors = useThemeColors();
+  const { colors, isDark } = useTheme();
   const width = `${Math.min(100, Math.max(0, progress * 100))}%` as const;
   return (
-    <View style={[styles.track, inset(), { height, padding: 2, backgroundColor: colors.base }]}>
+    <View
+      style={[
+        styles.track,
+        inset(),
+        {
+          height,
+          padding: 2,
+          backgroundColor: isDark ? colors.surfaceRaised : colors.base,
+        },
+      ]}
+    >
       {gradient ? (
         <LinearGradient
           colors={[...gradients.ring]}
@@ -33,7 +43,11 @@ export const ProgressBar = ({
         <View
           style={[
             styles.fill,
-            { width, backgroundColor: color ?? colors.accent, borderRadius: Math.max(4, height / 2 - 2) },
+            {
+              width,
+              backgroundColor: color ?? colors.accent,
+              borderRadius: Math.max(4, height / 2 - 2),
+            },
           ]}
         />
       )}
@@ -42,11 +56,6 @@ export const ProgressBar = ({
 };
 
 const styles = StyleSheet.create({
-  track: {
-    borderRadius: 8,
-    overflow: 'hidden',
-  },
-  fill: {
-    height: '100%',
-  },
+  track: { borderRadius: 8, overflow: 'hidden' },
+  fill: { height: '100%' },
 });

@@ -1,9 +1,10 @@
 import React from 'react';
-import { Pressable, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { colors } from '@/theme/colors';
+import { useTheme } from '@/hooks/useTheme';
 import { radius } from '@/theme/radius';
 import { plusShadow } from '@/utils/shadow';
+import { PressableScale } from '@/components/ui/PressableScale';
 
 type PlusButtonProps = {
   onPress: () => void;
@@ -17,43 +18,42 @@ export const PlusButton = ({
   size = 40,
   accessibilityLabel = 'Add',
   checked = false,
-}: PlusButtonProps) => (
-  <Pressable
-    onPress={onPress}
-    accessibilityRole="button"
-    accessibilityLabel={accessibilityLabel}
-    hitSlop={6}
-    style={({ pressed }) => [
-      styles.button,
-      plusShadow(),
-      {
-        width: Math.max(44, size),
-        height: Math.max(44, size),
-        borderRadius: radius.plus,
-      },
-      checked && styles.checked,
-      pressed && styles.pressed,
-    ]}
-  >
-    <Feather
-      name={checked ? 'check' : 'plus'}
-      size={Math.round(size * 0.48)}
-      color={checked ? colors.ink : colors.textInverse}
-      accessible={false}
-    />
-  </Pressable>
-);
+}: PlusButtonProps) => {
+  const { colors, isDark } = useTheme();
+  return (
+    <PressableScale
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
+      hitSlop={6}
+      style={[
+        styles.button,
+        plusShadow(),
+        {
+          width: Math.max(44, size),
+          height: Math.max(44, size),
+          borderRadius: radius.plus,
+          backgroundColor: checked
+            ? isDark
+              ? colors.surfaceRaised
+              : colors.base
+            : colors.accent,
+        },
+      ]}
+    >
+      <Feather
+        name={checked ? 'check' : 'plus'}
+        size={Math.round(size * 0.48)}
+        color={checked ? colors.ink : colors.onAccent}
+        accessible={false}
+      />
+    </PressableScale>
+  );
+};
 
 const styles = StyleSheet.create({
   button: {
-    backgroundColor: colors.accent,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  checked: {
-    backgroundColor: colors.base,
-  },
-  pressed: {
-    transform: [{ scale: 0.98 }],
   },
 });

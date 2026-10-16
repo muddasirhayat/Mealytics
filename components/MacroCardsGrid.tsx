@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { useThemeColors } from '@/hooks/useThemeColors';
+import { useTheme } from '@/hooks/useTheme';
 import { fonts } from '@/theme/fonts';
 import { RaisedCard } from '@/components/ui/RaisedCard';
 import { ProgressBar } from '@/components/ui/ProgressBar';
@@ -17,7 +17,7 @@ type MacroCardsGridProps = {
   targetFiber: number;
 };
 
-const MacroCard = ({
+const MacroCard = memo(function MacroCard({
   label,
   value,
   target,
@@ -29,24 +29,24 @@ const MacroCard = ({
   target: number;
   color: string;
   colors: ThemeColors;
-}) => {
+}) {
   const pct = target > 0 ? Math.round((value / target) * 100) : 0;
   return (
     <RaisedCard padding={14} radiusValue={22} style={styles.card}>
       <View style={styles.top}>
-        <Text style={[styles.label, { color: colors.muted }]}>{label}</Text>
-        <Text style={[styles.pct, { color: colors.muted }]}>{pct}%</Text>
+        <Text style={[styles.label, { color: colors.inkSecondary }]}>{label}</Text>
+        <Text style={[styles.pct, { color: colors.inkSecondary }]}>{pct}%</Text>
       </View>
       <Text style={[styles.value, { color: colors.ink }]}>
         {Math.round(value)}
-        <Text style={[styles.target, { color: colors.muted }]}> / {Math.round(target)} g</Text>
+        <Text style={[styles.target, { color: colors.inkMuted }]}> / {Math.round(target)} g</Text>
       </Text>
       <View style={styles.bar}>
         <ProgressBar progress={Math.min(1, value / Math.max(1, target))} color={color} height={10} />
       </View>
     </RaisedCard>
   );
-};
+});
 
 export const MacroCardsGrid = ({
   protein,
@@ -58,7 +58,7 @@ export const MacroCardsGrid = ({
   targetFat,
   targetFiber,
 }: MacroCardsGridProps) => {
-  const colors = useThemeColors();
+  const { colors } = useTheme();
   return (
     <View style={styles.grid}>
       <MacroCard label="Protein" value={protein} target={targetProtein} color={colors.protein} colors={colors} />
@@ -70,43 +70,12 @@ export const MacroCardsGrid = ({
 };
 
 const styles = StyleSheet.create({
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 16,
-  },
-  card: {
-    width: '47%',
-    flexGrow: 1,
-    minWidth: 140,
-  },
-  top: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  label: {
-    fontFamily: fonts.manropeBold,
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  pct: {
-    fontFamily: fonts.manropeBold,
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  value: {
-    fontFamily: fonts.outfitSemiBold,
-    fontSize: 24,
-    fontWeight: '600',
-    marginTop: 4,
-  },
-  target: {
-    fontFamily: fonts.manropeSemiBold,
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  bar: {
-    marginTop: 10,
-  },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 16 },
+  card: { width: '47%', flexGrow: 1, minWidth: 140 },
+  top: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  label: { fontFamily: fonts.manropeBold, fontSize: 13, fontWeight: '700' },
+  pct: { fontFamily: fonts.manropeBold, fontSize: 12, fontWeight: '700' },
+  value: { fontFamily: fonts.outfitSemiBold, fontSize: 24, fontWeight: '600', marginTop: 4 },
+  target: { fontFamily: fonts.manropeSemiBold, fontSize: 13, fontWeight: '600' },
+  bar: { marginTop: 10 },
 });
