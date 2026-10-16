@@ -1,7 +1,11 @@
 module.exports = function (api) {
   api.cache(true);
+  // Do not use api.env() here — it conflicts with Metro's Babel cache
+  // ("Caching has already been configured with .never or .forever()").
+  const isProd =
+    process.env.BABEL_ENV === 'production' || process.env.NODE_ENV === 'production';
   const plugins = [];
-  if (api.env('production')) {
+  if (isProd) {
     plugins.push('transform-remove-console');
   }
   // Must be last.
