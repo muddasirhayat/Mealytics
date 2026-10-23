@@ -52,6 +52,6 @@ export const useUserStore = create<UserState>((set) => ({
   },
 
   resetUser: () => {
-    set({ profile: null, goals: null, hasOnboarded: false });
+    set({ profile: null, goals: null, hasOnboarded: false, isLoading: false, isHydrated: true });
   },
 }));

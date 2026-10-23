@@ -27,4 +27,12 @@ export const celebrationStorage = {
   async markCalorieGoalCelebrated(date: Date = new Date()): Promise<void> {
     await storage.setItem(dayKey('mealytics_calorie_goal', date), true);
   },
+
+  async hasMacroGoalCelebrated(date: Date = new Date()): Promise<boolean> {
+    return Boolean(await storage.getItem<boolean>(dayKey('mealytics_macro_goal', date)));
+  },
+
+  async markMacroGoalCelebrated(date: Date = new Date()): Promise<void> {
+    await storage.setItem(dayKey('mealytics_macro_goal', date), true);
+  },
 };

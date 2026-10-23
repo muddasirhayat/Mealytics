@@ -34,7 +34,7 @@ export const Ruler = ({
   onChange,
   accessibilityLabel,
 }: RulerProps) => {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const { tickIfChanged } = useTickFeedback();
   const listRef = useRef<Animated.FlatList<number>>(null);
   const lastEmitted = useRef(value);
@@ -82,7 +82,7 @@ export const Ruler = ({
       style={[
         styles.ruler,
         inset(),
-        { backgroundColor: isDark ? colors.surfaceRaised : colors.base },
+        { backgroundColor: colors.base },
       ]}
       accessibilityRole="adjustable"
       accessibilityLabel={accessibilityLabel}

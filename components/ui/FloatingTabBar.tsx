@@ -1,7 +1,6 @@
 import React, { useEffect } from 'react';
-import { Platform, StyleSheet, Text, type View as RNView } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { BlurView } from 'expo-blur';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
@@ -15,6 +14,7 @@ import { radius } from '@/theme/radius';
 import { typography } from '@/theme/typography';
 import { centerTabShadow } from '@/utils/shadow';
 import { PressableScale } from '@/components/ui/PressableScale';
+import { useMealStore } from '@/store/mealStore';
 import {
   TAB_BAR_BOTTOM_OFFSET,
   TAB_BAR_HEIGHT,
@@ -45,7 +45,6 @@ type FloatingTabBarProps = {
     };
     navigate: (name: string, params?: object) => void;
   };
-  blurTargetRef: React.RefObject<RNView | null>;
 };
 
 const TabIcon = ({
@@ -71,23 +70,20 @@ const TabIcon = ({
   );
 };
 
-function FloatingTabBarInner({ state, navigation, blurTargetRef }: FloatingTabBarProps) {
+function FloatingTabBarInner({ state, navigation }: FloatingTabBarProps) {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
+  const logForToday = useMealStore((state) => state.logForToday);
 
   return (
-    <BlurView
-      tint={isDark ? 'dark' : 'light'}
-      intensity={Platform.OS === 'android' ? 22 : 40}
-      blurTarget={blurTargetRef}
-      blurMethod="dimezisBlurViewSdk31Plus"
+    <View
       style={[
         styles.bar,
         {
           bottom: TAB_BAR_BOTTOM_OFFSET + insets.bottom,
-          backgroundColor: isDark ? colors.tabBarGlass : colors.glass,
-          borderColor: isDark ? colors.border : colors.glassBorder,
+          backgroundColor: colors.bgElevated,
+          borderColor: colors.border,
         },
       ]}
     >
@@ -100,7 +96,10 @@ function FloatingTabBarInner({ state, navigation, blurTargetRef }: FloatingTabBa
           return (
             <PressableScale
               key={item.routeName}
-              onPress={() => router.push('/search')}
+              onPress={() => {
+                logForToday();
+                router.push('/search');
+              }}
               accessibilityRole="button"
               accessibilityLabel="Add food"
               hitSlop={6}
@@ -136,7 +135,7 @@ function FloatingTabBarInner({ state, navigation, blurTargetRef }: FloatingTabBa
           </PressableScale>
         );
       })}
-    </BlurView>
+    </View>
   );
 }
 
@@ -151,6 +150,8 @@ const styles = StyleSheet.create({
     borderRadius: radius.tabBar,
     overflow: 'hidden',
     borderWidth: 1,
+    borderTopWidth: 1,
+    elevation: 8,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-around',

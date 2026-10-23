@@ -6,6 +6,7 @@ type PreferencesState = {
   soundsAndHaptics: boolean;
   isHydrated: boolean;
   setSoundsAndHaptics: (value: boolean) => void;
+  reset: () => void;
 };
 
 export const usePreferencesStore = create<PreferencesState>()(
@@ -14,6 +15,7 @@ export const usePreferencesStore = create<PreferencesState>()(
       soundsAndHaptics: true,
       isHydrated: false,
       setSoundsAndHaptics: (soundsAndHaptics) => set({ soundsAndHaptics }),
+      reset: () => set({ soundsAndHaptics: true }),
     }),
     {
       name: 'mealytics_preferences',

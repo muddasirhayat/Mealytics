@@ -25,15 +25,15 @@ export const IconSquare = ({
   color,
   accessibilityLabel,
 }: IconSquareProps) => {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const iconColor = color ?? colors.ink;
-  const bg = isDark ? colors.surfaceRaised : colors.base;
+  const bg = colors.base;
   const inner = (
     <View
       style={[
         styles.box,
         { backgroundColor: bg },
-        insetStyle || isDark ? inset() : raiseSm(),
+        insetStyle ? inset() : raiseSm(),
         { width: size, height: size, borderRadius: radius.icon },
       ]}
     >

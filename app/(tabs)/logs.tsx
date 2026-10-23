@@ -1,12 +1,13 @@
-import React, { memo, useCallback, useMemo, useState } from 'react';
+import React, { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { SectionList, StyleSheet, Text, View } from 'react-native';
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { mealStorage } from '@/storage/mealStorage';
 import { useUserStore } from '@/store/userStore';
 import { Meal } from '@/types/meal';
 import { Food } from '@/types/food';
 import { EmptyState } from '@/components/StateIndicators';
+import { WaterTrackerCard } from '@/components/WaterTrackerCard';
 import {
   ConfirmDialog,
   GlassCard,
@@ -22,9 +23,13 @@ import { formatFoodServing } from '@/utils/nutrition';
 import { useTheme } from '@/hooks/useTheme';
 import { fonts } from '@/theme/fonts';
 import { typography } from '@/theme/typography';
-import { inset, raiseList, raiseSm } from '@/utils/shadow';
+import { inset, raiseSm } from '@/utils/shadow';
 import { useTabBarSpace } from '@/constants/layout';
 import type { ThemeColors } from '@/theme/palette';
+import { useMealStore } from '@/store/mealStore';
+import { startOfDay, startOfDayMs } from '@/utils/date';
+import { waterTargetMl as waterFromWeight } from '@/utils/goals';
+import { pushFoodEdit } from '@/utils/foodEdit';
 
 const DAY_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
@@ -64,14 +69,15 @@ type SlotSection = {
 const FoodRowItem = memo(function FoodRowItem({
   item,
   colors,
-  isDark,
+  onEdit,
   onDelete,
 }: {
   item: FoodRow;
   colors: ThemeColors;
-  isDark: boolean;
+  onEdit: (mealId: string, index: number, food: Food) => void;
   onDelete: (mealId: string, index: number, name: string) => void;
 }) {
+  const iconBg = { backgroundColor: colors.base };
   return (
     <View style={styles.foodRow}>
       <View style={styles.foodCopy}>
@@ -88,15 +94,20 @@ const FoodRowItem = memo(function FoodRowItem({
       </View>
       <Text style={[styles.foodKcal, { color: colors.ink }]}>{Math.round(item.food.calories)}</Text>
       <PressableScale
+        onPress={() => onEdit(item.mealId, item.index, item.food)}
+        accessibilityRole="button"
+        accessibilityLabel={`Edit ${item.food.name}`}
+        hitSlop={8}
+        style={[styles.iconBtn, inset(), iconBg]}
+      >
+        <Feather name="edit-2" size={16} color={colors.ink} />
+      </PressableScale>
+      <PressableScale
         onPress={() => onDelete(item.mealId, item.index, item.food.name)}
         accessibilityRole="button"
         accessibilityLabel={`Delete ${item.food.name}`}
         hitSlop={8}
-        style={[
-          styles.trash,
-          inset(),
-          { backgroundColor: isDark ? colors.surfaceRaised : colors.base },
-        ]}
+        style={[styles.iconBtn, inset(), iconBg]}
       >
         <Feather name="trash-2" size={16} color={colors.danger} />
       </PressableScale>
@@ -107,15 +118,25 @@ const FoodRowItem = memo(function FoodRowItem({
 export default function LogsScreen() {
   const router = useRouter();
   const tabBarSpace = useTabBarSpace();
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
+  const setDraftDate = useMealStore((state) => state.setDraftDate);
+  const profile = useUserStore((state) => state.profile);
   const goals = useUserStore((state) => state.goals);
+  const params = useLocalSearchParams<{ date?: string | string[] }>();
+  const dateParam = Array.isArray(params.date) ? params.date[0] : params.date;
   const today = useMemo(() => {
     const now = new Date();
     now.setHours(0, 0, 0, 0);
     return now;
   }, []);
-  const [selectedDate, setSelectedDate] = useState(today);
-  const [weekAnchor, setWeekAnchor] = useState(today);
+  const [selectedDate, setSelectedDate] = useState(() => {
+    const parsed = dateParam ? Number(dateParam) : NaN;
+    if (!Number.isFinite(parsed)) return today;
+    const day = new Date(parsed);
+    day.setHours(0, 0, 0, 0);
+    return day > today ? today : day;
+  });
+  const [weekAnchor, setWeekAnchor] = useState(selectedDate);
   const [meals, setMeals] = useState<Meal[]>([]);
   const [weekKcal, setWeekKcal] = useState<number[]>(Array(7).fill(0));
   const [daysWithMeals, setDaysWithMeals] = useState<Set<string>>(new Set());
@@ -124,6 +145,15 @@ export default function LogsScreen() {
     index: number;
     name: string;
   } | null>(null);
+
+  useEffect(() => {
+    const parsed = dateParam ? Number(dateParam) : NaN;
+    if (!Number.isFinite(parsed)) return;
+    const day = startOfDay(parsed);
+    if (day > today) return;
+    setSelectedDate(day);
+    setWeekAnchor(day);
+  }, [dateParam, today]);
 
   const week = getWeek(weekAnchor);
   const goal = goals?.targetCalories ?? 0;
@@ -215,11 +245,28 @@ export default function LogsScreen() {
     setPendingDelete({ mealId, index, name });
   }, []);
 
+  const handleEditFood = useCallback(
+    (mealId: string, index: number, food: Food) => {
+      pushFoodEdit(router, food, { editMealId: mealId, editIndex: index });
+    },
+    [router]
+  );
+
+  const handleAddFood = useCallback(() => {
+    setDraftDate(startOfDayMs(selectedDate));
+    router.push('/search');
+  }, [router, selectedDate, setDraftDate]);
+
   const renderItem = useCallback(
     ({ item }: { item: FoodRow }) => (
-      <FoodRowItem item={item} colors={colors} isDark={isDark} onDelete={handleDeleteFood} />
+      <FoodRowItem
+        item={item}
+        colors={colors}
+        onEdit={handleEditFood}
+        onDelete={handleDeleteFood}
+      />
     ),
-    [colors, handleDeleteFood, isDark]
+    [colors, handleDeleteFood, handleEditFood]
   );
 
   return (
@@ -251,7 +298,7 @@ export default function LogsScreen() {
                           styles.barTrack,
                           inset(),
                           {
-                            backgroundColor: isDark ? colors.surfaceRaised : colors.base,
+                            backgroundColor: colors.base,
                           },
                         ]}
                       >
@@ -302,12 +349,8 @@ export default function LogsScreen() {
                     style={[
                       styles.dayTile,
                       selected
-                        ? isDark
-                          ? { backgroundColor: colors.accent }
-                          : inset()
-                        : isDark
-                          ? [{ backgroundColor: colors.surfaceRaised }, raiseList()]
-                          : [raiseSm(), { backgroundColor: colors.base }],
+                        ? [inset(), { backgroundColor: colors.base }]
+                        : [raiseSm(), { backgroundColor: colors.base }],
                       future && styles.dayDisabled,
                     ]}
                   >
@@ -315,11 +358,7 @@ export default function LogsScreen() {
                       style={[
                         styles.dayName,
                         {
-                          color: selected
-                            ? isDark
-                              ? colors.onAccent
-                              : colors.accent
-                            : colors.inkSecondary,
+                          color: selected ? colors.accent : colors.inkSecondary,
                         },
                       ]}
                     >
@@ -329,11 +368,7 @@ export default function LogsScreen() {
                       style={[
                         styles.dayNum,
                         {
-                          color: selected
-                            ? isDark
-                              ? colors.onAccent
-                              : colors.accent
-                            : colors.ink,
+                          color: selected ? colors.accent : colors.ink,
                         },
                       ]}
                     >
@@ -343,8 +378,7 @@ export default function LogsScreen() {
                       style={[
                         styles.dot,
                         hasMeals && { backgroundColor: colors.mint },
-                        selected && isDark && { backgroundColor: colors.onAccent },
-                        selected && !isDark && { backgroundColor: colors.accent },
+                        selected && { backgroundColor: colors.accent },
                       ]}
                     />
                   </PressableScale>
@@ -373,11 +407,21 @@ export default function LogsScreen() {
                 fiber={dayTotals.fiber}
               />
             </RaisedCard>
+
+            {profile ? (
+              <View style={styles.water}>
+                <WaterTrackerCard
+                  key={startOfDayMs(selectedDate)}
+                  dateMs={startOfDayMs(selectedDate)}
+                  dailyTargetMl={waterFromWeight(profile.weightKg)}
+                />
+              </View>
+            ) : null}
           </View>
         }
         renderSectionHeader={({ section }) => (
           <RaisedCard padding={14} radiusValue={22} style={styles.slotHeader}>
-            <IconSquare name="coffee" insetStyle={isDark} color={colors.ink} />
+            <IconSquare name="coffee" color={colors.ink} />
             <Text style={[styles.slotTitle, { color: colors.ink }]}>{section.title}</Text>
             <Text style={[styles.slotKcal, { color: colors.accent }]}>
               {Math.round(section.slotKcal)} kcal
@@ -389,16 +433,14 @@ export default function LogsScreen() {
           <EmptyState compact icon="restaurant-outline" message="No meals logged for this day." />
         }
         ListFooterComponent={
-          sections.length === 0 ? (
-            <PressableScale
-              onPress={() => router.push('/search')}
-              style={styles.cta}
-              accessibilityRole="button"
-              accessibilityLabel="Add food"
-            >
-              <Text style={[styles.ctaText, { color: colors.accent }]}>Add food</Text>
-            </PressableScale>
-          ) : null
+          <PressableScale
+            onPress={handleAddFood}
+            style={styles.cta}
+            accessibilityRole="button"
+            accessibilityLabel="Add food"
+          >
+            <Text style={[styles.ctaText, { color: colors.accent }]}>Add food</Text>
+          </PressableScale>
         }
       />
       <ConfirmDialog
@@ -506,6 +548,9 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     gap: 6,
   },
+  water: {
+    marginBottom: 8,
+  },
   summaryDate: {
     fontFamily: fonts.outfitSemiBold,
     fontSize: 18,
@@ -552,7 +597,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.outfitSemiBold,
     fontSize: 14,
   },
-  trash: {
+  iconBtn: {
     width: 44,
     height: 44,
     borderRadius: 14,

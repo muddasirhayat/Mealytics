@@ -18,7 +18,7 @@ export {
 };
 
 export const gradients = {
-  ring: ['#2CC8A8', '#5B5FEF'] as const,
+  ring: [lightColors.mint, lightColors.accent] as const,
 };
 
 /**

@@ -14,9 +14,7 @@ import Constants from 'expo-constants';
 import { Feather } from '@expo/vector-icons';
 import { type Href, useRouter } from 'expo-router';
 import { useUserStore } from '@/store/userStore';
-import { useMealStore } from '@/store/mealStore';
-import { useOnboardingStore } from '@/store/onboardingStore';
-import { wipeMealyticsKeys } from '@/storage/wipe';
+import { resetAppToFreshInstall } from '@/storage/wipe';
 import { UserProfile, Gender, ActivityLevel, GoalType, UnitSystem } from '@/types/user';
 import { getBmiCategory } from '@/utils/bmi';
 import { parseDecimal, parseInteger, sanitizeDecimalInput, sanitizeIntegerInput } from '@/utils/number';
@@ -120,14 +118,12 @@ const GOALS: { label: string; value: GoalType }[] = [
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const themePreference = useThemeStore((s) => s.preference);
   const setThemePreference = useThemeStore((s) => s.setPreference);
   const soundsAndHaptics = usePreferencesStore((s) => s.soundsAndHaptics);
   const setSoundsAndHaptics = usePreferencesStore((s) => s.setSoundsAndHaptics);
-  const { profile, goals, saveProfile, isLoading, resetUser } = useUserStore();
-  const clearDraftMeal = useMealStore((s) => s.clearDraftMeal);
-  const resetOnboarding = useOnboardingStore((s) => s.reset);
+  const { profile, goals, saveProfile, isLoading } = useUserStore();
   const tabBarSpace = useTabBarSpace();
   const { show } = useToast();
   const styles = makeStyles(colors);
@@ -297,17 +293,12 @@ export default function ProfileScreen() {
             radiusValue={28}
             style={{
               ...styles.identity,
-              ...(isDark
-                ? { backgroundColor: colors.surface, borderColor: colors.border }
-                : null),
             }}
           >
             <View
               style={[
                 styles.avatar,
-                isDark
-                  ? { backgroundColor: colors.surfaceRaised, borderWidth: 1, borderColor: colors.border }
-                  : raiseSm(),
+                raiseSm(),
               ]}
             >
               <Text style={styles.avatarText}>{initialLetter}</Text>
@@ -507,10 +498,7 @@ export default function ProfileScreen() {
         onConfirm={() => {
           void (async () => {
             try {
-              await wipeMealyticsKeys();
-              resetUser();
-              clearDraftMeal();
-              resetOnboarding();
+              await resetAppToFreshInstall();
               setWipeOpen(false);
               router.replace('/onboarding' as Href);
             } catch {
@@ -661,7 +649,7 @@ const makeStyles = (colors: ThemeColors) =>
     footerText: { ...typography.caption, color: colors.inkMuted, textAlign: 'center' },
     modalBg: {
       flex: 1,
-      backgroundColor: 'rgba(30,37,51,0.35)',
+      backgroundColor: colors.overlay,
       justifyContent: 'center',
       padding: 24,
     },

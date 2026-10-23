@@ -7,6 +7,7 @@ type ThemeState = {
   preference: ThemePreference;
   isHydrated: boolean;
   setPreference: (preference: ThemePreference) => void;
+  reset: () => void;
 };
 
 export const useThemeStore = create<ThemeState>()(
@@ -15,6 +16,7 @@ export const useThemeStore = create<ThemeState>()(
       preference: 'system',
       isHydrated: false,
       setPreference: (preference) => set({ preference }),
+      reset: () => set({ preference: 'light' }),
     }),
     {
       name: 'mealytics_theme',

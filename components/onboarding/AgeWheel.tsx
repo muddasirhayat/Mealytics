@@ -17,7 +17,7 @@ type AgeWheelProps = {
 };
 
 export const AgeWheel = ({ value, onChange }: AgeWheelProps) => {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const { tickIfChanged } = useTickFeedback();
   const listRef = useRef<FlatList<number>>(null);
   const lastEmitted = useRef(value);
@@ -52,7 +52,7 @@ export const AgeWheel = ({ value, onChange }: AgeWheelProps) => {
         style={[
           styles.window,
           inset(),
-          { backgroundColor: isDark ? colors.surfaceRaised : colors.base },
+          { backgroundColor: colors.base },
         ]}
         pointerEvents="none"
         accessible={false}

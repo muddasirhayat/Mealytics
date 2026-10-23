@@ -6,6 +6,7 @@ import { useMealStore } from '@/store/mealStore';
 import { useUserStore } from '@/store/userStore';
 import { mealStorage } from '@/storage/mealStorage';
 import { EmptyState } from '@/components/StateIndicators';
+import { LoggingDateNote } from '@/components/LoggingDateNote';
 import {
   ConfirmDialog,
   GlassCard,
@@ -19,7 +20,9 @@ import {
 import { useToast } from '@/components/ui/Toast';
 import { getMealSlotLabel } from '@/utils/mealSlot';
 import { formatFoodServing } from '@/utils/nutrition';
-import { createId, nowMs } from '@/utils/id';
+import { createId } from '@/utils/id';
+import { formatLogDate, isTodayMs, mealTimestampForDate } from '@/utils/date';
+import { pushFoodEdit } from '@/utils/foodEdit';
 import { MealSlot } from '@/types/meal';
 import { colors } from '@/theme/colors';
 import { fonts } from '@/theme/fonts';
@@ -35,24 +38,25 @@ const SLOTS: { label: string; value: MealSlot }[] = [
 
 export default function DraftMealScreen() {
   const router = useRouter();
-  const { draftMeal, draftSlot, setDraftSlot, removeFoodFromMeal, clearDraftMeal } = useMealStore();
+  const { draftMeal, draftSlot, draftDate, setDraftSlot, removeFoodFromMeal, clearDraftMeal } =
+    useMealStore();
   const goals = useUserStore((state) => state.goals);
   const { show } = useToast();
-  const [todayLoggedKcal, setTodayLoggedKcal] = useState(0);
+  const [loggedKcal, setLoggedKcal] = useState(0);
   const [pendingDelete, setPendingDelete] = useState<{ id: string; name: string } | null>(null);
 
   useFocusEffect(
     useCallback(() => {
       let cancelled = false;
-      void mealStorage.getMealsByDate(new Date()).then((dayMeals) => {
+      void mealStorage.getMealsByDate(new Date(draftDate)).then((dayMeals) => {
         if (!cancelled) {
-          setTodayLoggedKcal(dayMeals.reduce((sum, meal) => sum + meal.totalCalories, 0));
+          setLoggedKcal(dayMeals.reduce((sum, meal) => sum + meal.totalCalories, 0));
         }
       });
       return () => {
         cancelled = true;
       };
-    }, [])
+    }, [draftDate])
   );
 
   const totals = draftMeal.reduce(
@@ -68,14 +72,15 @@ export default function DraftMealScreen() {
   );
 
   const leftover = goals
-    ? Math.round(goals.targetCalories - todayLoggedKcal - totals.calories)
+    ? Math.round(goals.targetCalories - loggedKcal - totals.calories)
     : null;
 
   const handleSave = async () => {
     if (draftMeal.length === 0) return;
+    const loggingToday = isTodayMs(draftDate);
     const newMeal = {
       id: createId(),
-      timestamp: nowMs(),
+      timestamp: mealTimestampForDate(draftDate),
       slot: draftSlot,
       foods: draftMeal,
       totalCalories: Math.round(totals.calories),
@@ -86,8 +91,14 @@ export default function DraftMealScreen() {
     const success = await mealStorage.saveMeal(newMeal);
     if (success) {
       clearDraftMeal();
-      show(`${getMealSlotLabel(draftSlot)} saved`);
-      router.replace('/');
+      show(
+        loggingToday
+          ? `${getMealSlotLabel(draftSlot)} saved`
+          : `${getMealSlotLabel(draftSlot)} saved for ${formatLogDate(draftDate)}`
+      );
+      router.replace(
+        loggingToday ? '/' : { pathname: '/(tabs)/logs', params: { date: String(draftDate) } }
+      );
     } else {
       show('Could not save');
     }
@@ -100,6 +111,7 @@ export default function DraftMealScreen() {
   return (
     <Screen blobs="B1">
       <TopBar title="Current meal" />
+      <LoggingDateNote />
       {draftMeal.length === 0 ? (
         <View style={styles.empty}>
           <EmptyState compact icon="restaurant-outline" message="Your meal is empty." />
@@ -121,7 +133,8 @@ export default function DraftMealScreen() {
               />
               {goals && leftover !== null ? (
                 <Text style={styles.left}>
-                  Leaves {leftover} kcal of your {goals.targetCalories} goal today
+                  Leaves {leftover} kcal of your {goals.targetCalories} goal
+                  {isTodayMs(draftDate) ? ' today' : ` for ${formatLogDate(draftDate)}`}
                 </Text>
               ) : null}
             </GlassCard>
@@ -139,11 +152,20 @@ export default function DraftMealScreen() {
                 </View>
                 <Text style={styles.rowKcal}>{Math.round(food.calories)}</Text>
                 <Pressable
+                  onPress={() => pushFoodEdit(router, food, { editDraftId: food.id })}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Edit ${food.name}`}
+                  hitSlop={8}
+                  style={[styles.iconBtn, inset()]}
+                >
+                  <Feather name="edit-2" size={16} color={colors.ink} />
+                </Pressable>
+                <Pressable
                   onPress={() => handleRemove(food.id, food.name)}
                   accessibilityRole="button"
                   accessibilityLabel={`Delete ${food.name}`}
                   hitSlop={8}
-                  style={[styles.trash, inset()]}
+                  style={[styles.iconBtn, inset()]}
                 >
                   <Feather name="trash-2" size={16} color={colors.danger} />
                 </Pressable>
@@ -224,7 +246,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.ink,
   },
-  trash: {
+  iconBtn: {
     width: 44,
     height: 44,
     borderRadius: 14,

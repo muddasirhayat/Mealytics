@@ -1,23 +1,22 @@
-import React, { useRef } from 'react';
+import React from 'react';
 import { View } from 'react-native';
 import { Tabs } from 'expo-router';
 import { enableFreeze } from 'react-native-screens';
-import { BlurTargetView } from 'expo-blur';
 import { FloatingTabBar } from '@/components/ui/FloatingTabBar';
+import { useTheme } from '@/hooks/useTheme';
 
 enableFreeze(true);
 
 export default function TabLayout() {
-  const blurTargetRef = useRef<View>(null);
+  const { colors } = useTheme();
 
   return (
-    <BlurTargetView ref={blurTargetRef} style={{ flex: 1 }}>
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
       <Tabs
         tabBar={(props) => (
           <FloatingTabBar
             state={props.state}
             navigation={props.navigation as never}
-            blurTargetRef={blurTargetRef}
           />
         )}
         screenOptions={{
@@ -25,6 +24,7 @@ export default function TabLayout() {
           tabBarHideOnKeyboard: true,
           lazy: true,
           freezeOnBlur: true,
+          sceneStyle: { backgroundColor: colors.bg },
         }}
       >
         <Tabs.Screen name="index" options={{ title: 'Today' }} />
@@ -33,6 +33,6 @@ export default function TabLayout() {
         <Tabs.Screen name="quickmeals" options={{ title: 'Quick' }} />
         <Tabs.Screen name="profile" options={{ title: 'Profile' }} />
       </Tabs>
-    </BlurTargetView>
+    </View>
   );
 }

@@ -16,6 +16,7 @@ import {
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useThemeColors, useResolvedScheme } from '@/hooks/useThemeColors';
 import { lightColors } from '@/theme/palette';
+import { useThemeStore } from '@/store/themeStore';
 import { spacing } from '@/theme/spacing';
 import { typography } from '@/theme/typography';
 import { AnimatedSplashScreen } from '@/components/AnimatedSplashScreen';
@@ -63,6 +64,7 @@ function RootNavigator() {
   const onboardingHydrated = useOnboardingStore((state) => state.isHydrated);
   const colors = useThemeColors();
   const scheme = useResolvedScheme();
+  const themeHydrated = useThemeStore((state) => state.isHydrated);
   const [fontsLoaded, fontError] = useFonts({
     Outfit_500Medium,
     Outfit_600SemiBold,
@@ -88,7 +90,8 @@ function RootNavigator() {
     });
   }, []);
 
-  const ready = (fontsLoaded || Boolean(fontError)) && isHydrated && onboardingHydrated;
+  const ready =
+    (fontsLoaded || Boolean(fontError)) && isHydrated && onboardingHydrated && themeHydrated;
   const showOnboarding = !hasOnboarded || celebrating;
 
   useEffect(() => {
@@ -142,7 +145,7 @@ function RootNavigator() {
 
 export default function RootLayout() {
   return (
-    <GestureHandlerRootView style={styles.flex}>
+    <GestureHandlerRootView style={[styles.flex, { backgroundColor: lightColors.bg }]}>
       <ThemeProvider>
         <RootNavigator />
       </ThemeProvider>

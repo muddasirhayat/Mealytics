@@ -27,7 +27,7 @@ type QuickMealCardProps = {
 
 export const QuickMealCard = memo(function QuickMealCard({ meal, kcalLeft }: QuickMealCardProps) {
   const router = useRouter();
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const addFoodToMeal = useMealStore((state) => state.addFoodToMeal);
   const { show } = useToast();
   const [added, setAdded] = useState(false);
@@ -77,7 +77,7 @@ export const QuickMealCard = memo(function QuickMealCard({ meal, kcalLeft }: Qui
               key={tag}
               style={[
                 styles.tag,
-                { backgroundColor: isDark ? colors.surfaceRaised : colors.insetFill },
+                { backgroundColor: colors.insetFill },
               ]}
             >
               <Text style={[styles.tagText, { color: colors.inkSecondary }]}>

@@ -36,6 +36,7 @@ export default function OnboardingHeight() {
       cta="Continue"
       onBack={() => safeBack('/onboarding')}
       onContinue={() => router.push('/onboarding/weight')}
+      scroll={false}
     >
       <View style={styles.center}>
         <Text style={[styles.value, { color: colors.ink }]} accessibilityLiveRegion="polite">

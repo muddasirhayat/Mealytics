@@ -19,7 +19,7 @@ export const PlusButton = ({
   accessibilityLabel = 'Add',
   checked = false,
 }: PlusButtonProps) => {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   return (
     <PressableScale
       onPress={onPress}
@@ -34,9 +34,7 @@ export const PlusButton = ({
           height: Math.max(44, size),
           borderRadius: radius.plus,
           backgroundColor: checked
-            ? isDark
-              ? colors.surfaceRaised
-              : colors.base
+            ? colors.base
             : colors.accent,
         },
       ]}

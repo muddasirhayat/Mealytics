@@ -1,24 +1,54 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
+import Animated, {
+  useAnimatedProps,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 import { useTheme } from '@/hooks/useTheme';
+import { motion } from '@/constants/motion';
 import { inset } from '@/utils/shadow';
+
+const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 type RingProps = {
   size?: number;
   stroke?: number;
   progress: number;
+  color?: string;
+  over?: boolean;
   children?: React.ReactNode;
 };
 
-export const Ring = ({ size = 160, stroke = 14, progress, children }: RingProps) => {
+export const Ring = ({
+  size = 160,
+  stroke = 14,
+  progress,
+  color,
+  over = false,
+  children,
+}: RingProps) => {
   const { colors, isDark } = useTheme();
   const r = (size - stroke) / 2;
   const c = 2 * Math.PI * r;
-  const clamped = Math.min(1, Math.max(0, progress));
-  const dash = c * clamped;
-  // Tip of the arc for the accent dot
-  const angle = -Math.PI / 2 + clamped * 2 * Math.PI;
+  const target = over ? 1 : Math.min(1, Math.max(0, progress));
+  const strokeColor = color ?? (over ? colors.danger : colors.accent);
+  const progressSv = useSharedValue(target);
+
+  useEffect(() => {
+    progressSv.value = withTiming(target, { duration: motion.duration.slow, easing: motion.easing });
+  }, [target, progressSv]);
+
+  const animatedProps = useAnimatedProps(() => {
+    const p = Math.min(1, Math.max(0, progressSv.value));
+    const dash = p >= 0.999 ? c : c * p;
+    return {
+      strokeDasharray: `${dash} ${c}`,
+    };
+  });
+
+  const angle = -Math.PI / 2 + target * 2 * Math.PI;
   const tipX = size / 2 + r * Math.cos(angle);
   const tipY = size / 2 + r * Math.sin(angle);
 
@@ -31,7 +61,7 @@ export const Ring = ({ size = 160, stroke = 14, progress, children }: RingProps)
           width: size,
           height: size,
           borderRadius: size / 2,
-          backgroundColor: isDark ? colors.surface : colors.base,
+          backgroundColor: colors.base,
         },
       ]}
     >
@@ -40,32 +70,32 @@ export const Ring = ({ size = 160, stroke = 14, progress, children }: RingProps)
           cx={size / 2}
           cy={size / 2}
           r={r}
-          stroke={isDark ? colors.surfaceRaised : colors.fallbackBorder}
+          stroke={isDark ? colors.shadowDark : colors.fallbackBorder}
           strokeWidth={stroke}
           fill="none"
-          opacity={isDark ? 1 : 0.35}
+          opacity={isDark ? 0.7 : 0.35}
         />
-        <Circle
+        <AnimatedCircle
           cx={size / 2}
           cy={size / 2}
           r={r}
-          stroke={colors.accent}
+          stroke={strokeColor}
           strokeWidth={stroke}
           fill="none"
-          strokeDasharray={`${dash} ${c}`}
           strokeLinecap="round"
           rotation="-90"
           origin={`${size / 2}, ${size / 2}`}
+          animatedProps={animatedProps}
         />
       </Svg>
-      {clamped > 0.02 ? (
+      {target > 0.02 && target < 0.999 ? (
         <View
           style={[
             styles.tip,
             {
               left: tipX - 5,
               top: tipY - 5,
-              backgroundColor: colors.accent,
+              backgroundColor: strokeColor,
             },
           ]}
           accessible={false}

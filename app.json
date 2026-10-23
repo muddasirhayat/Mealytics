@@ -4,9 +4,19 @@
     "slug": "Mealytics",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/brand/icon.png",
+    "icon": "./assets/brand/logo.png",
     "scheme": "mealytics",
     "userInterfaceStyle": "automatic",
+    "backgroundColor": "#E6EBF2",
+    "androidStatusBar": {
+      "barStyle": "dark-content",
+      "backgroundColor": "#E6EBF2",
+      "translucent": false
+    },
+    "androidNavigationBar": {
+      "barStyle": "dark-content",
+      "backgroundColor": "#E6EBF2"
+    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.muddasirhayat.mealytics",
@@ -14,10 +24,9 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/brand/adaptive-icon-foreground.png",
-        "backgroundImage": "./assets/brand/adaptive-icon-background.png",
-        "monochromeImage": "./assets/brand/monochrome-icon.png",
-        "backgroundColor": "#E6EBF2"
+        "foregroundImage": "./assets/brand/logo.png",
+        "backgroundColor": "#5B5FEF",
+        "monochromeImage": "./assets/brand/monochrome-icon.png"
       },
       "blockedPermissions": [
         "android.permission.READ_EXTERNAL_STORAGE",
@@ -38,13 +47,13 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/brand/splash-icon.png",
-          "imageWidth": 200,
+          "image": "./assets/brand/logo.png",
+          "imageWidth": 180,
           "resizeMode": "contain",
           "backgroundColor": "#E6EBF2",
           "dark": {
-            "image": "./assets/brand/splash-icon.png",
-            "backgroundColor": "#12151F"
+            "image": "./assets/brand/logo.png",
+            "backgroundColor": "#252A37"
           }
         }
       ],

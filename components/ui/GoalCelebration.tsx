@@ -1,13 +1,13 @@
 import React, { useEffect } from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { Feather } from '@expo/vector-icons';
-import { useThemeColors } from '@/hooks/useThemeColors';
+import { useTheme } from '@/hooks/useTheme';
 import { fonts } from '@/theme/fonts';
 import { typography } from '@/theme/typography';
 import { RaisedCard } from '@/components/ui/RaisedCard';
-import { PrimaryButton } from '@/components/ui/PrimaryButton';
-import { inset, raise } from '@/utils/shadow';
 import { successFeedback } from '@/utils/feedback';
+import { motion } from '@/constants/motion';
 
 type GoalCelebrationProps = {
   visible: boolean;
@@ -17,27 +17,48 @@ type GoalCelebrationProps = {
 };
 
 export const GoalCelebration = ({ visible, title, body, onClose }: GoalCelebrationProps) => {
-  const colors = useThemeColors();
+  const { colors } = useTheme();
+  const checkScale = useSharedValue(0.86);
 
   useEffect(() => {
-    if (visible) successFeedback();
-  }, [visible]);
+    if (!visible) {
+      checkScale.value = 0.86;
+      return;
+    }
+    successFeedback();
+    checkScale.value = withSpring(1, motion.springSoft);
+  }, [visible, checkScale]);
+
+  const badgeStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: checkScale.value }],
+  }));
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <View style={styles.overlay}>
-        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="Dismiss" />
-        <RaisedCard padding={24} radiusValue={28} style={styles.card}>
-          <View style={[styles.outer, raise()]} accessible={false}>
-            <View style={[styles.inner, inset()]}>
-              <View style={[styles.check, { backgroundColor: colors.mint }]}>
-                <Feather name="check" size={36} color={colors.textInverse} />
-              </View>
-            </View>
-          </View>
+      <View style={[styles.overlay, { backgroundColor: colors.overlay }]}>
+        <Pressable
+          style={StyleSheet.absoluteFill}
+          onPress={onClose}
+          accessibilityRole="button"
+          accessibilityLabel="Dismiss"
+        />
+        <RaisedCard padding={22} radiusValue={24} style={styles.card}>
+          <Animated.View
+            style={[styles.badge, { backgroundColor: colors.mint }, badgeStyle]}
+            accessible={false}
+          >
+            <Feather name="check" size={26} color={colors.onAccent} />
+          </Animated.View>
           <Text style={[styles.title, { color: colors.ink }]}>{title}</Text>
           <Text style={[styles.body, { color: colors.muted }]}>{body}</Text>
-          <PrimaryButton label="Nice" onPress={onClose} />
+          <Pressable
+            onPress={onClose}
+            accessibilityRole="button"
+            accessibilityLabel="Nice"
+            style={[styles.action, { backgroundColor: colors.accent }]}
+          >
+            <Text style={[styles.actionLabel, { color: colors.onAccent }]}>Nice</Text>
+          </Pressable>
         </RaisedCard>
       </View>
     </Modal>
@@ -47,35 +68,21 @@ export const GoalCelebration = ({ visible, title, body, onClose }: GoalCelebrati
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(30,37,51,0.4)',
     justifyContent: 'center',
     padding: 24,
   },
   card: {
-    gap: 14,
-    alignItems: 'center',
+    gap: 12,
     zIndex: 1,
+    alignItems: 'center',
   },
-  outer: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
+  badge: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  inner: {
-    width: 88,
-    height: 88,
-    borderRadius: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  check: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
+    marginBottom: 4,
   },
   title: {
     fontFamily: fonts.outfitBold,
@@ -86,5 +93,19 @@ const styles = StyleSheet.create({
   body: {
     ...typography.body,
     textAlign: 'center',
+  },
+  action: {
+    alignSelf: 'stretch',
+    height: 48,
+    minHeight: 48,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 4,
+  },
+  actionLabel: {
+    fontFamily: fonts.outfitSemiBold,
+    fontSize: 16,
+    fontWeight: '600',
   },
 });

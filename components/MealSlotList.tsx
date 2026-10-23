@@ -11,6 +11,7 @@ import { RaisedCard } from '@/components/ui/RaisedCard';
 import { IconSquare } from '@/components/ui/IconSquare';
 import { PlusButton } from '@/components/ui/PlusButton';
 import { PressableScale } from '@/components/ui/PressableScale';
+import { useMealStore } from '@/store/mealStore';
 
 const SLOT_ICON: Record<MealSlot, keyof typeof Feather.glyphMap> = {
   breakfast: 'coffee',
@@ -34,12 +35,13 @@ const SlotRow = memo(function SlotRow({
   kcal: number;
 }) {
   const router = useRouter();
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
+  const logForToday = useMealStore((state) => state.logForToday);
   return (
     <RaisedCard padding={14} radiusValue={22} style={styles.card}>
       <IconSquare
         name={SLOT_ICON[slotId]}
-        insetStyle={isDark}
+        insetStyle={false}
         color={colors.ink}
         accessibilityLabel={title}
       />
@@ -48,7 +50,10 @@ const SlotRow = memo(function SlotRow({
         <Text style={[styles.kcal, { color: colors.accent }]}>{Math.round(kcal)} kcal</Text>
       </View>
       <PlusButton
-        onPress={() => router.push({ pathname: '/search', params: { slot: slotId } })}
+        onPress={() => {
+          logForToday();
+          router.push({ pathname: '/search', params: { slot: slotId } });
+        }}
         accessibilityLabel={`Add food to ${title}`}
       />
     </RaisedCard>
@@ -58,6 +63,7 @@ const SlotRow = memo(function SlotRow({
 export const MealSlotList = ({ meals }: MealSlotListProps) => {
   const router = useRouter();
   const { colors } = useTheme();
+  const logForToday = useMealStore((state) => state.logForToday);
 
   return (
     <View style={styles.wrap}>
@@ -68,7 +74,10 @@ export const MealSlotList = ({ meals }: MealSlotListProps) => {
         return <SlotRow key={slot.id} slotId={slot.id} title={slot.title} kcal={kcal} />;
       })}
       <PressableScale
-        onPress={() => router.push('/search')}
+        onPress={() => {
+          logForToday();
+          router.push('/search');
+        }}
         accessibilityRole="button"
         accessibilityLabel="Search foods"
         style={styles.link}

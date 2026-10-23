@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useTheme } from '@/hooks/useTheme';
 import { gradients } from '@/theme/colors';
+import { motion } from '@/constants/motion';
 import { inset } from '@/utils/shadow';
 
 type ProgressBarProps = {
@@ -18,8 +20,18 @@ export const ProgressBar = ({
   gradient = false,
   height = 12,
 }: ProgressBarProps) => {
-  const { colors, isDark } = useTheme();
-  const width = `${Math.min(100, Math.max(0, progress * 100))}%` as const;
+  const { colors } = useTheme();
+  const clamped = Math.min(1, Math.max(0, progress));
+  const progressSv = useSharedValue(clamped);
+
+  useEffect(() => {
+    progressSv.value = withTiming(clamped, { duration: motion.duration.slow, easing: motion.easing });
+  }, [clamped, progressSv]);
+
+  const fillStyle = useAnimatedStyle(() => ({
+    width: `${progressSv.value * 100}%`,
+  }));
+
   return (
     <View
       style={[
@@ -28,23 +40,25 @@ export const ProgressBar = ({
         {
           height,
           padding: 2,
-          backgroundColor: isDark ? colors.surfaceRaised : colors.base,
+          backgroundColor: colors.base,
         },
       ]}
     >
       {gradient ? (
-        <LinearGradient
-          colors={[...gradients.ring]}
-          start={{ x: 0, y: 0.5 }}
-          end={{ x: 1, y: 0.5 }}
-          style={[styles.fill, { width, borderRadius: Math.max(4, height / 2 - 2) }]}
-        />
+        <Animated.View style={[styles.fill, fillStyle]}>
+          <LinearGradient
+            colors={[...gradients.ring]}
+            start={{ x: 0, y: 0.5 }}
+            end={{ x: 1, y: 0.5 }}
+            style={[StyleSheet.absoluteFill, { borderRadius: Math.max(4, height / 2 - 2) }]}
+          />
+        </Animated.View>
       ) : (
-        <View
+        <Animated.View
           style={[
             styles.fill,
+            fillStyle,
             {
-              width,
               backgroundColor: color ?? colors.accent,
               borderRadius: Math.max(4, height / 2 - 2),
             },

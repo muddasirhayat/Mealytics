@@ -36,7 +36,7 @@ export const ConfirmDialog = ({
   const colors = useThemeColors();
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
-      <View style={styles.overlay}>
+      <View style={[styles.overlay, { backgroundColor: colors.overlay }]}>
         <Pressable
           style={StyleSheet.absoluteFill}
           onPress={onCancel}
@@ -87,7 +87,6 @@ export const ConfirmDialog = ({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(30,37,51,0.35)',
     justifyContent: 'center',
     padding: 24,
   },

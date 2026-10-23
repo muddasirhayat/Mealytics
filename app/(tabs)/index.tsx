@@ -70,6 +70,7 @@ const makeStyles = (colors: ThemeColors) =>
       color: colors.ink,
       marginTop: 22,
       letterSpacing: -0.6,
+      flexShrink: 1,
     },
     sub: {
       fontFamily: fonts.manropeSemiBold,
@@ -149,11 +150,14 @@ export default function HomeScreen() {
   const { profile, goals } = useUserStore();
   const [meals, setMeals] = useState<Meal[]>([]);
   const [celebrateCalories, setCelebrateCalories] = useState(false);
+  const [celebrateMacro, setCelebrateMacro] = useState(false);
   const checkedRef = useRef(false);
+  const macroCheckedRef = useRef(false);
 
   useFocusEffect(
     useCallback(() => {
       checkedRef.current = false;
+      macroCheckedRef.current = false;
       void mealStorage.getMealsByDate(new Date()).then(setMeals);
     }, [])
   );
@@ -172,8 +176,10 @@ export default function HomeScreen() {
     { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 }
   );
 
-  const left = goals ? Math.max(0, goals.targetCalories - dailyTotals.calories) : 0;
-  const progress = goals ? dailyTotals.calories / Math.max(1, goals.targetCalories) : 0;
+  const calorieDelta = goals ? dailyTotals.calories - goals.targetCalories : 0;
+  const overGoal = Boolean(goals && calorieDelta > 0);
+  const left = goals ? Math.max(0, -calorieDelta) : 0;
+  const progress = goals ? Math.min(1, dailyTotals.calories / Math.max(1, goals.targetCalories)) : 0;
   const initial = (profile?.name?.trim()?.[0] ?? '?').toUpperCase();
 
   useEffect(() => {
@@ -187,6 +193,23 @@ export default function HomeScreen() {
       setCelebrateCalories(true);
     })();
   }, [dailyTotals.calories, goals]);
+
+  useEffect(() => {
+    if (!goals || macroCheckedRef.current) return;
+    const hit =
+      dailyTotals.protein >= goals.targetProtein ||
+      dailyTotals.carbs >= goals.targetCarbs ||
+      dailyTotals.fat >= goals.targetFat ||
+      dailyTotals.fiber >= goals.targetFiber;
+    if (!hit) return;
+    macroCheckedRef.current = true;
+    void (async () => {
+      const already = await celebrationStorage.hasMacroGoalCelebrated();
+      if (already) return;
+      await celebrationStorage.markMacroGoalCelebrated();
+      setCelebrateMacro(true);
+    })();
+  }, [dailyTotals, goals]);
 
   return (
     <Screen padded={false}>
@@ -224,9 +247,11 @@ export default function HomeScreen() {
         {goals ? (
           <>
             <GlassCard padding={22} radiusValue={32} style={styles.hero}>
-              <Ring size={160} stroke={14} progress={Math.min(1, progress)}>
-                <Text style={styles.leftValue}>{Math.round(left).toLocaleString()}</Text>
-                <Text style={styles.leftLabel}>kcal left</Text>
+              <Ring size={160} stroke={14} progress={progress} over={overGoal}>
+                <Text style={[styles.leftValue, overGoal && { color: colors.danger }]}>
+                  {Math.round(overGoal ? calorieDelta : left).toLocaleString()}
+                </Text>
+                <Text style={styles.leftLabel}>{overGoal ? 'kcal over' : 'kcal left'}</Text>
               </Ring>
               <View style={styles.heroStats}>
                 <View>
@@ -282,6 +307,12 @@ export default function HomeScreen() {
         title="Calorie goal reached"
         body="You hit today’s calorie target. Great logging."
         onClose={() => setCelebrateCalories(false)}
+      />
+      <GoalCelebration
+        visible={celebrateMacro && !celebrateCalories}
+        title="Macro goal reached"
+        body="You hit a daily macro target. Nice work."
+        onClose={() => setCelebrateMacro(false)}
       />
     </Screen>
   );

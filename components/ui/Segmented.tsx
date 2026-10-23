@@ -26,7 +26,7 @@ export function Segmented<T extends string>({
   onChange,
   accessibilityLabel,
 }: SegmentedProps<T>) {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const soundsOn = usePreferencesStore((s) => s.soundsAndHaptics);
   const index = Math.max(0, options.findIndex((o) => o.value === value));
   const [trackW, setTrackW] = useState(0);
@@ -57,13 +57,7 @@ export function Segmented<T extends string>({
       onLayout={onLayout}
       style={[
         styles.track,
-        isDark
-          ? {
-              backgroundColor: colors.surfaceRaised,
-              borderWidth: 1,
-              borderColor: colors.border,
-            }
-          : [inset(), { backgroundColor: colors.base }],
+        [inset(), { backgroundColor: colors.base }],
       ]}
       accessibilityRole="tablist"
       accessibilityLabel={accessibilityLabel}
@@ -74,12 +68,7 @@ export function Segmented<T extends string>({
           styles.thumb,
           thumbStyle,
           { width: Math.max(0, itemW) },
-          isDark
-            ? {
-                backgroundColor: colors.surfacePressed,
-                boxShadow: [{ offsetX: 0, offsetY: 4, blurRadius: 10, color: 'rgba(0,0,0,0.35)' }],
-              }
-            : [{ backgroundColor: colors.base }, raiseSm()],
+          [{ backgroundColor: colors.base }, raiseSm()],
         ]}
       />
       {options.map((option) => {
@@ -102,11 +91,7 @@ export function Segmented<T extends string>({
               style={[
                 styles.label,
                 {
-                  color: selected
-                    ? colors.accent
-                    : isDark
-                      ? colors.inkSecondary
-                      : colors.muted,
+                  color: selected ? colors.accent : colors.muted,
                 },
               ]}
             >

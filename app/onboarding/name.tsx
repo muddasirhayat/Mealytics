@@ -10,7 +10,7 @@ import { inset } from '@/utils/shadow';
 
 export default function OnboardingName() {
   const router = useRouter();
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const name = useOnboardingStore((s) => s.name);
   const patch = useOnboardingStore((s) => s.patch);
   const [focused, setFocused] = useState(false);
@@ -34,24 +34,12 @@ export default function OnboardingName() {
       <View
         style={[
           styles.field,
-          isDark
-            ? {
-                backgroundColor: colors.surfaceRaised,
-                borderWidth: focused ? 1.5 : 1,
-                borderColor: focused ? colors.accent : colors.border,
-                boxShadow: focused
-                  ? [
-                      {
-                        offsetX: 0,
-                        offsetY: 0,
-                        blurRadius: 0,
-                        spreadDistance: 4,
-                        color: 'rgba(124,128,255,0.18)',
-                      },
-                    ]
-                  : [{ offsetX: 0, offsetY: 2, blurRadius: 6, color: 'rgba(0,0,0,0.45)', inset: true }],
-              }
-            : [inset(), { backgroundColor: colors.base }],
+          inset(),
+          {
+            backgroundColor: colors.base,
+            borderWidth: focused ? 1 : 0,
+            borderColor: focused ? colors.accent : 'transparent',
+          },
         ]}
       >
         <TextInput

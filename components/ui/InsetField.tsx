@@ -32,7 +32,7 @@ export const InsetField = ({
   accessibilityLabel,
   fullWidth = false,
 }: InsetFieldProps) => {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const [focused, setFocused] = useState(false);
 
   return (
@@ -41,21 +41,21 @@ export const InsetField = ({
       <View
         style={[
           styles.field,
-          isDark
-            ? {
-                backgroundColor: colors.surfaceRaised,
-                borderWidth: focused ? 1.5 : 1,
-                borderColor: focused ? colors.accent : colors.border,
-                boxShadow: [
-                  { offsetX: 0, offsetY: 2, blurRadius: 6, color: 'rgba(0,0,0,0.45)', inset: true },
-                ],
-              }
-            : [inset(), { backgroundColor: colors.base }],
+          inset(),
+          {
+            backgroundColor: colors.base,
+            borderWidth: focused ? 1 : StyleSheet.hairlineWidth,
+            borderColor: focused ? colors.accent : colors.border,
+          },
           { height: Math.max(height, 44) },
         ]}
       >
         <TextInput
-          style={[styles.input, { color: colors.ink }]}
+          style={[
+            styles.input,
+            { color: colors.ink, minWidth: Math.max(48, value.length * 10 + 8) },
+            !suffix && styles.inputGrow,
+          ]}
           value={value}
           onChangeText={onChangeText}
           placeholder={placeholder}
@@ -85,8 +85,9 @@ const styles = StyleSheet.create({
     borderRadius: radius.field,
     paddingHorizontal: 16,
   },
-  input: { ...typography.fieldValue, flex: 1, paddingVertical: 0 },
-  suffix: { ...typography.fieldLabel, marginLeft: 8 },
+  input: { ...typography.fieldValue, flexGrow: 0, flexShrink: 1, paddingVertical: 0, paddingRight: 0 },
+  inputGrow: { flex: 1 },
+  suffix: { ...typography.fieldLabel, marginLeft: 4 },
   error: {
     ...typography.caption,
     fontFamily: typography.fieldLabel.fontFamily,

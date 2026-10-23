@@ -19,6 +19,11 @@ export const scaleAmount = (value: number | undefined, multiplier: number): numb
   return value * multiplier;
 };
 
+export const formatServingLabel = (amount: number, unit: string): string => {
+  const size = Math.round(amount * 10) / 10;
+  return `${size} ${unit}`;
+};
+
 export const scaleFoodNutrition = (food: Food, amount: number): Omit<Food, 'id'> => {
   const multiplier = getServingMultiplier(food, amount);
   const unit = food.servingUnit?.trim() || 'g';
@@ -34,11 +39,32 @@ export const scaleFoodNutrition = (food: Food, amount: number): Omit<Food, 'id'>
     sodium: scaleAmount(food.sodium, multiplier),
     servingSize: amount,
     servingUnit: unit,
-    servingLabel: food.servingLabel,
+    servingLabel: formatServingLabel(amount, unit),
     nutrients: (food.nutrients ?? []).map((nutrient) => ({
       ...nutrient,
       amount: nutrient.amount * multiplier,
     })),
+  };
+};
+
+export const applyServing = (food: Food, amount: number, unit: string): Omit<Food, 'id'> => {
+  const scaled = scaleFoodNutrition(food, amount);
+  return {
+    ...scaled,
+    servingSize: amount,
+    servingUnit: unit,
+    servingLabel: formatServingLabel(amount, unit),
+  };
+};
+
+/** Keep current nutrition as the new "1 unit" baseline. */
+export const asUnitBaseline = (food: Food, currentAmount: number, nextUnit: string): Omit<Food, 'id'> => {
+  const scaled = scaleFoodNutrition(food, currentAmount);
+  return {
+    ...scaled,
+    servingSize: 1,
+    servingUnit: nextUnit,
+    servingLabel: formatServingLabel(1, nextUnit),
   };
 };
 

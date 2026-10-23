@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { Segmented } from '@/components/ui';
+import { isMassOrVolumeUnit, servingUnitOptions } from '@/constants/servings';
 import { useTheme } from '@/hooks/useTheme';
 import { spacing } from '@/theme/spacing';
 import { radius } from '@/theme/radius';
@@ -12,18 +14,24 @@ interface ServingSizeSelectorProps {
   unit: string;
   baseAmount: number;
   onChange: (amount: number) => void;
+  onUnitChange?: (unit: string) => void;
 }
 
-const STEP = 10;
-const PRESETS = [50, 100, 150, 200];
+const MASS_PRESETS = [50, 100, 150, 200];
+const PORTION_PRESETS = [0.5, 1, 1.5, 2];
 
 export const ServingSizeSelector = ({
   amount,
   unit,
   baseAmount,
   onChange,
+  onUnitChange,
 }: ServingSizeSelectorProps) => {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
+  const massLike = isMassOrVolumeUnit(unit);
+  const step = massLike ? 10 : 0.5;
+  const minAmount = massLike ? 1 : 0.1;
+  const presets = massLike ? MASS_PRESETS : PORTION_PRESETS;
   const amountText = String(Math.round(amount * 10) / 10);
   const [text, setText] = useState(amountText);
   const [syncedAmount, setSyncedAmount] = useState(amount);
@@ -61,42 +69,56 @@ export const ServingSizeSelector = ({
   };
 
   const bump = (delta: number) => {
-    const next = Math.max(1, Math.round((amount + delta) * 10) / 10);
+    const next = Math.max(minAmount, Math.round((amount + delta) * 10) / 10);
     onChange(next);
   };
 
-  const fieldBg = isDark ? colors.surfaceRaised : colors.background;
+  const fieldBg = colors.background;
 
   return (
     <View
       style={[
         styles.container,
         {
-          backgroundColor: isDark ? colors.surface : colors.surface,
+          backgroundColor: colors.surface,
           borderColor: colors.border,
         },
       ]}
     >
       <Text style={[styles.label, { color: colors.ink }]}>Your serving</Text>
       <Text style={[styles.hint, { color: colors.inkSecondary }]}>
-        Database values are per {Math.round(baseAmount)}
-        {unit}. Nutrition below updates for the amount you enter.
+        Values are per {Math.round(baseAmount * 10) / 10} {unit}. Nutrition below updates for the
+        amount you enter.
       </Text>
+
+      {onUnitChange ? (
+        <View style={styles.units}>
+          <Segmented
+            options={servingUnitOptions(unit)}
+            value={unit}
+            onChange={onUnitChange}
+            accessibilityLabel="Serving unit"
+          />
+        </View>
+      ) : null}
 
       <View style={styles.controls}>
         <TouchableOpacity
           style={[styles.button, { backgroundColor: fieldBg }]}
-          onPress={() => bump(-STEP)}
-          disabled={amount <= 1}
+          onPress={() => bump(-step)}
+          disabled={amount <= minAmount}
           accessibilityRole="button"
-          accessibilityLabel={`Decrease serving by ${STEP}${unit}`}
+          accessibilityLabel={`Decrease serving by ${step}${unit}`}
         >
-          <Ionicons name="remove" size={22} color={amount <= 1 ? colors.border : colors.accent} />
+          <Ionicons name="remove" size={22} color={amount <= minAmount ? colors.border : colors.accent} />
         </TouchableOpacity>
 
-        <View style={[styles.inputWrap, { backgroundColor: fieldBg, borderColor: colors.border }]}>
+        <View style={[styles.inputWrap, { backgroundColor: fieldBg, borderColor: colors.borderStrong }]}>
           <TextInput
-            style={[styles.input, { color: colors.ink }]}
+            style={[
+              styles.input,
+              { color: colors.ink, minWidth: Math.max(36, text.length * 14) },
+            ]}
             value={text}
             onChangeText={handleChangeText}
             onBlur={() => commitText(text)}
@@ -113,9 +135,9 @@ export const ServingSizeSelector = ({
 
         <TouchableOpacity
           style={[styles.button, { backgroundColor: fieldBg }]}
-          onPress={() => bump(STEP)}
+          onPress={() => bump(step)}
           accessibilityRole="button"
-          accessibilityLabel={`Increase serving by ${STEP}${unit}`}
+          accessibilityLabel={`Increase serving by ${step}${unit}`}
         >
           <Ionicons name="add" size={22} color={colors.accent} />
         </TouchableOpacity>
@@ -123,7 +145,7 @@ export const ServingSizeSelector = ({
       {error ? <Text style={[styles.errorText, { color: colors.danger }]}>{error}</Text> : null}
 
       <View style={styles.presets}>
-        {PRESETS.map((preset) => {
+        {presets.map((preset) => {
           const selected = Math.abs(amount - preset) < 0.05;
           return (
             <TouchableOpacity
@@ -146,7 +168,7 @@ export const ServingSizeSelector = ({
                 ]}
               >
                 {preset}
-                {unit}
+                {massLike ? unit : ` ${unit}`}
               </Text>
             </TouchableOpacity>
           );
@@ -169,6 +191,9 @@ const styles = StyleSheet.create({
   hint: {
     ...typography.caption,
     marginTop: 4,
+    marginBottom: spacing.sm,
+  },
+  units: {
     marginBottom: spacing.sm,
   },
   errorText: {
@@ -198,14 +223,16 @@ const styles = StyleSheet.create({
     height: 44,
   },
   input: {
-    flex: 1,
+    flexGrow: 0,
+    flexShrink: 0,
     ...typography.title,
     paddingVertical: 0,
+    paddingRight: 0,
   },
   unit: {
     ...typography.bodyMedium,
     fontWeight: '700',
-    marginLeft: spacing.xs,
+    marginLeft: 4,
   },
   presets: {
     flexDirection: 'row',

@@ -14,7 +14,7 @@ type ChipProps = {
 };
 
 export const Chip = ({ label, selected = false, onPress }: ChipProps) => {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const soundsOn = usePreferencesStore((s) => s.soundsAndHaptics);
 
   return (
@@ -29,25 +29,15 @@ export const Chip = ({ label, selected = false, onPress }: ChipProps) => {
       style={[
         styles.chip,
         selected
-          ? isDark
-            ? { backgroundColor: colors.accent, borderWidth: 0 }
-            : [inset(), { backgroundColor: colors.base }]
-          : isDark
-            ? { backgroundColor: colors.surfaceRaised, borderWidth: 0 }
-            : [raiseSm(), { backgroundColor: colors.base }],
+          ? [inset(), { backgroundColor: colors.base }]
+          : [raiseSm(), { backgroundColor: colors.base }],
       ]}
     >
       <Text
         style={[
           styles.text,
           {
-            color: selected
-              ? isDark
-                ? colors.onAccent
-                : colors.accent
-              : isDark
-                ? colors.inkSecondary
-                : colors.ink,
+            color: selected ? colors.accent : colors.ink,
           },
         ]}
       >

@@ -12,7 +12,9 @@ export const ScreenHeader = ({ title, right }: ScreenHeaderProps) => {
   const colors = useThemeColors();
   return (
     <View style={styles.row}>
-      <Text style={[styles.title, { color: colors.ink }]}>{title}</Text>
+      <Text style={[styles.title, { color: colors.ink }]} numberOfLines={2}>
+        {title}
+      </Text>
       {right}
     </View>
   );
@@ -28,5 +30,6 @@ const styles = StyleSheet.create({
   title: {
     ...typography.screenHeader,
     flex: 1,
+    flexShrink: 1,
   },
 });

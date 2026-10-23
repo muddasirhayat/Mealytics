@@ -58,13 +58,17 @@ export default function QuickMealsScreen() {
     }, [load])
   );
 
+  const overBudget = Boolean(goals && todayKcal > goals.targetCalories);
   const kcalLeft = goals ? Math.max(0, goals.targetCalories - todayKcal) : undefined;
   const subtitle = useMemo(() => {
     if (kcalLeft === undefined) {
       return '10 meal ideas for today';
     }
+    if (overBudget) {
+      return "You're over today's budget, lighter ideas below";
+    }
     return `10 meal ideas for today · fit your ${kcalLeft} kcal left`;
-  }, [kcalLeft]);
+  }, [kcalLeft, overBudget]);
 
   const renderItem = useCallback(
     ({ item, index }: { item: QuickMeal; index: number }) => {

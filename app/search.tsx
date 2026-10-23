@@ -14,6 +14,7 @@ import { Feather } from '@expo/vector-icons';
 import { useFoodSearch } from '@/hooks/useFoodSearch';
 import { EmptyState, ErrorState, LoadingState } from '@/components/StateIndicators';
 import { DraftMealBanner } from '@/components/DraftMealBanner';
+import { LoggingDateNote } from '@/components/LoggingDateNote';
 import {
   Chip,
   GlassCard,
@@ -108,7 +109,7 @@ const SearchResultRow = memo(function SearchResultRow({
 
 export default function SearchScreen() {
   const router = useRouter();
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const params = useLocalSearchParams<{ slot?: string | string[] }>();
   const slotParam = Array.isArray(params.slot) ? params.slot[0] : params.slot;
   const { query, setQuery, results, isLoading, isPending, searchedQuery, error, searchFoods } =
@@ -221,7 +222,7 @@ export default function SearchScreen() {
           style={[
             styles.searchRow,
             inset(),
-            { backgroundColor: isDark ? colors.surfaceRaised : colors.base },
+            { backgroundColor: colors.base },
           ]}
         >
           <Feather name="search" size={18} color={colors.inkMuted} accessible={false} />
@@ -255,6 +256,7 @@ export default function SearchScreen() {
             ))}
           </View>
         ) : null}
+        <LoggingDateNote />
         <Text style={[styles.adding, { color: colors.ink }]}>
           Adding to: <Text style={[styles.slot, { color: colors.accent }]}>{getMealSlotLabel(draftSlot)}</Text>
         </Text>

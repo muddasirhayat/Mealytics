@@ -19,12 +19,12 @@ export const RaisedCard = ({
   radiusValue = radius.card,
   small = true,
 }: RaisedCardProps) => {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   return (
     <View
       style={[
         styles.card,
-        { backgroundColor: isDark ? colors.surface : colors.base },
+        { backgroundColor: colors.base },
         small ? raiseSm() : raise(),
         { padding, borderRadius: radiusValue },
         style,

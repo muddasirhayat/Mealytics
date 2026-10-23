@@ -48,6 +48,7 @@ export type ThemeColors = {
   insetFill: string;
   shadowLight: string;
   shadowDark: string;
+  overlay: string;
   glass: string;
   glassBorder: string;
   glassHighlight: string;
@@ -108,6 +109,7 @@ export const lightColors: ThemeColors = {
   insetFill: '#DDE3EB',
   shadowLight: '#FFFFFF',
   shadowDark: '#BFC8D6',
+  overlay: 'rgba(30, 37, 51, 0.40)',
   glass: 'rgba(255, 255, 255, 0.32)',
   glassBorder: 'rgba(255, 255, 255, 0.7)',
   glassHighlight: 'rgba(255, 255, 255, 0.9)',
@@ -126,65 +128,76 @@ export const lightColors: ThemeColors = {
   bmiObese: '#DC2626',
 };
 
-/** Midnight Indigo */
+/**
+ * Midnight Indigo — soft-UI dark.
+ * Same glass + neumorphism language as light: every neumorphic surface shares
+ * ONE colour with the page (bg = base = surface = surfaceRaised) and depth comes
+ * from a dual shadow pair (lighter top-left highlight + deeper bottom-right shadow).
+ * Mid-dark slate-indigo base (not pure black) so both shadows stay visible.
+ * Text contrast on bg #252A37: ink 12.7:1, inkSecondary 7.1:1, muted 5.8:1,
+ * inkMuted 5.3:1, accent 4.6:1 (WCAG AA); white on accent 3.2:1 (AA large text / icons).
+ */
 export const darkColors: ThemeColors = {
-  bg: '#12151F',
-  bgElevated: '#171B27',
-  surface: '#1C2130',
-  surfaceRaised: '#242A3B',
-  surfacePressed: '#2B3246',
-  border: 'rgba(255,255,255,0.08)',
+  bg: '#252A37',
+  bgElevated: '#252A37',
+  surface: '#252A37',
+  surfaceRaised: '#252A37',
+  surfacePressed: '#212532',
+  border: 'rgba(255,255,255,0.06)',
   borderStrong: 'rgba(255,255,255,0.10)',
-  ink: '#F1F3F9',
-  inkSecondary: '#A7B0C2',
-  inkMuted: '#6F7A90',
-  accent: '#7C80FF',
-  accentPressed: '#6A6EF0',
+  ink: '#EEF1F8',
+  inkSecondary: '#AEB7CA',
+  inkMuted: '#949EB3',
+  accent: '#8084FF',
+  accentPressed: '#7478F5',
   onAccent: '#FFFFFF',
-  mint: '#34D4B4',
-  danger: '#FF7A8A',
-  warning: '#F5B95A',
+  mint: '#3DD9B9',
+  danger: '#FF8696',
+  warning: '#F5BE5C',
   protein: '#FF8A9A',
-  carbs: '#6BA8FF',
+  carbs: '#6FAEFF',
   fat: '#F5BE5C',
-  fiber: '#34D4B4',
+  fiber: '#3DD9B9',
 
-  base: '#12151F',
-  background: '#12151F',
-  text: '#F1F3F9',
-  muted: '#A7B0C2',
-  textSecondary: '#A7B0C2',
-  placeholder: '#6F7A90',
-  textMuted: '#6F7A90',
+  base: '#252A37',
+  background: '#252A37',
+  text: '#EEF1F8',
+  muted: '#9CA5B9',
+  textSecondary: '#AEB7CA',
+  placeholder: '#949EB3',
+  textMuted: '#949EB3',
   textInverse: '#FFFFFF',
-  primary: '#7C80FF',
-  primaryDark: '#6A6EF0',
-  primaryLight: 'rgba(124, 128, 255, 0.18)',
-  mintFill: '#34D4B4',
-  success: '#34D4B4',
-  error: '#FF7A8A',
-  info: '#6BA8FF',
-  divider: 'rgba(255,255,255,0.06)',
+  primary: '#8084FF',
+  primaryDark: '#7478F5',
+  primaryLight: 'rgba(128, 132, 255, 0.18)',
+  mintFill: '#3DD9B9',
+  success: '#3DD9B9',
+  error: '#FF8696',
+  info: '#6FAEFF',
+  divider: 'rgba(255,255,255,0.07)',
   fallbackBorder: 'rgba(255,255,255,0.10)',
-  insetFill: '#242A3B',
-  shadowLight: 'transparent',
-  shadowDark: 'rgba(0,0,0,0.40)',
-  glass: 'rgba(255,255,255,0.05)',
-  glassBorder: 'rgba(255,255,255,0.08)',
-  glassHighlight: 'transparent',
-  glassShadow: 'rgba(0,0,0,0.40)',
-  blobMint: '#34D4B4',
+  insetFill: '#212532',
+  // Neumorphic pair — dark-mode equivalents of light #FFFFFF / #BFC8D6
+  shadowLight: '#323848',
+  shadowDark: '#161922',
+  overlay: 'rgba(10, 12, 18, 0.60)',
+  // Glass tuned for dark: faint white fill, crisp hairline + top highlight
+  glass: 'rgba(255, 255, 255, 0.06)',
+  glassBorder: 'rgba(255, 255, 255, 0.12)',
+  glassHighlight: 'rgba(255, 255, 255, 0.14)',
+  glassShadow: 'rgba(8, 10, 16, 0.45)',
+  blobMint: '#3DD9B9',
   blobViolet: '#8B7BFF',
   blobPeach: '#FF9F7A',
-  blobOpacity: 0.18,
-  tabBarGlass: 'rgba(23,27,39,0.85)',
-  raisedShadow: 'rgba(0,0,0,0.40)',
-  insetShadow: 'rgba(0,0,0,0.45)',
-  accentShadow: 'rgba(124,128,255,0.35)',
-  bmiUnderweight: '#6BA8FF',
-  bmiNormal: '#34D4B4',
-  bmiOverweight: '#F5B95A',
-  bmiObese: '#FF7A8A',
+  blobOpacity: 0.35,
+  tabBarGlass: 'rgba(37, 42, 55, 0.72)',
+  raisedShadow: '',
+  insetShadow: '',
+  accentShadow: 'rgba(128, 132, 255, 0.35)',
+  bmiUnderweight: '#6FAEFF',
+  bmiNormal: '#3DD9B9',
+  bmiOverweight: '#F5BE5C',
+  bmiObese: '#FF8696',
 };
 
 export type ColorSchemeName = 'light' | 'dark';

@@ -18,6 +18,7 @@ export default function OnboardingAge() {
       cta="Continue"
       onBack={() => safeBack('/onboarding')}
       onContinue={() => router.push('/onboarding/height')}
+      scroll={false}
     >
       <AgeWheel value={age} onChange={(next) => patch({ age: next })} />
     </OnboardingShell>

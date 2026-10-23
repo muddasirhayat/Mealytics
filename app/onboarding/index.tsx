@@ -1,8 +1,9 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GlassCard, LogoMark, PrimaryButton, Screen } from '@/components/ui';
+import { useTheme } from '@/hooks/useTheme';
 import { colors } from '@/theme/colors';
 import { fonts } from '@/theme/fonts';
 import { inset, raise } from '@/utils/shadow';
@@ -15,6 +16,7 @@ export default function OnboardingWelcome() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { show } = useToast();
+  const { colors } = useTheme();
 
   const openLink = async (url: string) => {
     const ok = await openExternalUrl(url);
@@ -23,7 +25,12 @@ export default function OnboardingWelcome() {
 
   return (
     <Screen blobs="default" padded={false} edges={{ top: true, bottom: false }}>
-      <View style={styles.body}>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.body}
+        showsVerticalScrollIndicator={false}
+        bounces={false}
+      >
         <View style={styles.logoWrap}>
           <LogoMark />
         </View>
@@ -42,14 +49,14 @@ export default function OnboardingWelcome() {
             <Text style={styles.chipText}>P 224 · C 336 · F 83</Text>
           </View>
         </GlassCard>
-        <Text style={styles.title}>Eat well,{'\n'}track softly</Text>
-        <Text style={styles.sub}>
-          Calories, macros and water,{'\n'}calm and clear in one place.
+        <Text style={[styles.title, { color: colors.ink }]}>Eat well,{'\n'}track softly</Text>
+        <Text style={[styles.sub, { color: colors.muted }]}>
+          Calories, macros and water, calm and clear in one place.
         </Text>
-      </View>
+      </ScrollView>
       <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 24) }]}>
         <PrimaryButton label="Get started" onPress={() => router.push('/onboarding/intro')} />
-        <Text style={styles.footnote}>Your data stays on this device</Text>
+        <Text style={[styles.footnote, { color: colors.muted }]}>Your data stays on this device</Text>
         <View style={styles.legalRow}>
           <Pressable onPress={() => void openLink(PRIVACY_POLICY_URL)} accessibilityRole="link" style={styles.legalHit}>
             <Text style={styles.legal}>Privacy Policy</Text>
@@ -65,17 +72,23 @@ export default function OnboardingWelcome() {
 }
 
 const styles = StyleSheet.create({
-  body: {
+  scroll: {
     flex: 1,
+  },
+  body: {
+    flexGrow: 1,
     paddingHorizontal: 24,
     paddingTop: 20,
+    paddingBottom: 12,
   },
   logoWrap: {
     alignItems: 'center',
   },
   hero: {
-    height: 300,
-    marginTop: 44,
+    minHeight: 220,
+    aspectRatio: 1.15,
+    maxHeight: 300,
+    marginTop: 24,
     marginHorizontal: 6,
     overflow: 'hidden',
   },
@@ -134,8 +147,9 @@ const styles = StyleSheet.create({
     letterSpacing: -1.2,
     lineHeight: 42,
     textAlign: 'center',
-    marginTop: 44,
+    marginTop: 28,
     color: colors.ink,
+    flexShrink: 1,
   },
   sub: {
     fontFamily: fonts.manropeMedium,
@@ -145,6 +159,8 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 14,
     color: colors.muted,
+    flexShrink: 1,
+    paddingHorizontal: 8,
   },
   footer: {
     paddingHorizontal: 24,

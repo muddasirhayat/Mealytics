@@ -12,7 +12,7 @@ type GlassCardProps = {
 };
 
 export const GlassCard = ({ children, style, padding = 18, radiusValue = radius.glass }: GlassCardProps) => {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   return (
     <View
       style={[
@@ -21,7 +21,7 @@ export const GlassCard = ({ children, style, padding = 18, radiusValue = radius.
         {
           padding,
           borderRadius: radiusValue,
-          backgroundColor: isDark ? colors.surface : colors.glass,
+          backgroundColor: colors.glass,
           borderColor: colors.glassBorder,
         },
         style,

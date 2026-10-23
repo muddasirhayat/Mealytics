@@ -19,7 +19,7 @@ type SelectRowProps = {
 };
 
 export const SelectRow = ({ label, description, icon, selected, onPress }: SelectRowProps) => {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const soundsOn = usePreferencesStore((s) => s.soundsAndHaptics);
 
   return (
@@ -34,19 +34,15 @@ export const SelectRow = ({ label, description, icon, selected, onPress }: Selec
       style={[
         styles.row,
         selected
-          ? isDark
-            ? { backgroundColor: colors.accent }
-            : inset()
-          : isDark
-            ? { backgroundColor: colors.surfaceRaised }
-            : [raiseSm(), { backgroundColor: colors.base }],
+          ? [inset(), { backgroundColor: colors.base }]
+          : [raiseSm(), { backgroundColor: colors.base }],
         { minHeight: 78 },
       ]}
     >
       <IconSquare
         name={icon}
-        insetStyle={!selected || isDark}
-        color={selected ? (isDark ? colors.onAccent : colors.accent) : colors.inkSecondary}
+        insetStyle={!selected}
+        color={selected ? colors.accent : colors.inkSecondary}
         size={46}
       />
       <View style={styles.copy}>
@@ -54,11 +50,7 @@ export const SelectRow = ({ label, description, icon, selected, onPress }: Selec
           style={[
             styles.label,
             {
-              color: selected
-                ? isDark
-                  ? colors.onAccent
-                  : colors.accent
-                : colors.ink,
+              color: selected ? colors.accent : colors.ink,
             },
           ]}
         >
@@ -67,7 +59,7 @@ export const SelectRow = ({ label, description, icon, selected, onPress }: Selec
         <Text
           style={[
             styles.description,
-            { color: selected && isDark ? colors.onAccent : colors.inkSecondary },
+            { color: colors.inkSecondary },
           ]}
         >
           {description}
@@ -77,15 +69,15 @@ export const SelectRow = ({ label, description, icon, selected, onPress }: Selec
         style={[
           styles.radio,
           selected
-            ? { backgroundColor: isDark ? colors.onAccent : colors.accent }
-            : [inset(), { backgroundColor: isDark ? colors.surfacePressed : colors.base }],
+            ? { backgroundColor: colors.accent }
+            : [inset(), { backgroundColor: colors.base }],
         ]}
       >
         {selected ? (
           <Feather
             name="check"
             size={15}
-            color={isDark ? colors.accent : colors.onAccent}
+            color={colors.onAccent}
             accessible={false}
           />
         ) : null}
