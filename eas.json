@@ -19,13 +19,19 @@
       }
     },
     "production": {
-      "autoIncrement": true
+      "autoIncrement": true,
+      "android": {
+        "buildType": "app-bundle"
+      },
+      "env": {
+        "EXPO_PUBLIC_USDA_API_KEY": ""
+      }
     }
   },
   "submit": {
     "production": {
       "android": {
-        "track": "internal",
+        "track": "alpha",
         "releaseStatus": "draft"
       }
     }

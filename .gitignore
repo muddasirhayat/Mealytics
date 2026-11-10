@@ -51,5 +51,8 @@ app-example
 # local build artifacts
 /builds
 
+# Play Console screenshots captured from a device
+/store/play-screenshots/
+
 # USDA CSV/zip used only to generate data/foods.json (do not commit)
 tools/usda-build/raw/

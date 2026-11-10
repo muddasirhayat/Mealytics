@@ -15,8 +15,8 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.muddasirhayat.mealytics",
-      "buildNumber": "1"
+      "bundleIdentifier": "com.codixr.mealytics",
+      "buildNumber": "2"
     },
     "android": {
       "adaptiveIcon": {
@@ -36,8 +36,8 @@
       ],
       "predictiveBackGestureEnabled": false,
       "softwareKeyboardLayoutMode": "resize",
-      "package": "com.muddasirhayat.mealytics",
-      "versionCode": 1
+      "package": "com.codixr.mealytics",
+      "versionCode": 2
     },
     "web": {
       "output": "static",

@@ -553,8 +553,7 @@ export default function ProfileScreen() {
             <Text style={[styles.identityName, { color: colors.ink }]}>About Mealytics</Text>
             <Text style={styles.aboutBody}>Version {Constants.expoConfig?.version ?? '1.0.0'}</Text>
             <Text style={styles.aboutBody}>Food data: USDA FoodData Central; Open Food Facts (ODbL).</Text>
-            <Text style={styles.aboutBody}>Developer: Muddasir Hayat</Text>
-            <Text style={styles.aboutBody}>Launched by Codixr.com</Text>
+            <Text style={styles.aboutBody}>Published by Codixr</Text>
             <Pressable onPress={() => void openLink(`mailto:${SUPPORT_EMAIL}`)} accessibilityRole="link">
               <Text style={styles.aboutBody}>Support: {SUPPORT_EMAIL}</Text>
             </Pressable>
