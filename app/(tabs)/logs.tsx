@@ -1,4 +1,4 @@
-import React, { memo, useCallback, useEffect, useMemo, useState } from 'react';
+import React, { memo, useCallback, useMemo, useState } from 'react';
 import { SectionList, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
@@ -145,15 +145,19 @@ export default function LogsScreen() {
     index: number;
     name: string;
   } | null>(null);
+  const [trackedDateParam, setTrackedDateParam] = useState(dateParam);
 
-  useEffect(() => {
+  if (dateParam !== trackedDateParam) {
+    setTrackedDateParam(dateParam);
     const parsed = dateParam ? Number(dateParam) : NaN;
-    if (!Number.isFinite(parsed)) return;
-    const day = startOfDay(parsed);
-    if (day > today) return;
-    setSelectedDate(day);
-    setWeekAnchor(day);
-  }, [dateParam, today]);
+    if (Number.isFinite(parsed)) {
+      const day = startOfDay(parsed);
+      if (day <= today) {
+        setSelectedDate(day);
+        setWeekAnchor(day);
+      }
+    }
+  }
 
   const week = getWeek(weekAnchor);
   const goal = goals?.targetCalories ?? 0;

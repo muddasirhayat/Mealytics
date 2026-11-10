@@ -19,7 +19,7 @@ import { UserProfile, Gender, ActivityLevel, GoalType, UnitSystem } from '@/type
 import { getBmiCategory } from '@/utils/bmi';
 import { parseDecimal, parseInteger, sanitizeDecimalInput, sanitizeIntegerInput } from '@/utils/number';
 import { cmToFtIn, ftInToCm, kgToLbs, lbsToKg } from '@/utils/units';
-import { ACTIVITY_OPTIONS, AGE_MAX, AGE_MIN } from '@/constants/profileOptions';
+import { ACTIVITY_OPTIONS, ageValidationMessage } from '@/constants/profileOptions';
 import { openExternalUrl } from '@/utils/linking';
 import { useTheme } from '@/hooks/useTheme';
 import { useThemeStore } from '@/store/themeStore';
@@ -187,10 +187,7 @@ export default function ProfileScreen() {
   const heightInNum = parseInteger(heightIn);
   const weightNum = parseDecimal(weightDisplay);
   const nameError = name.trim() ? undefined : 'Please enter your name.';
-  const ageError =
-    ageNum === null || ageNum < AGE_MIN || ageNum > AGE_MAX
-      ? `Enter an age between ${AGE_MIN} and ${AGE_MAX}.`
-      : undefined;
+  const ageError = ageValidationMessage(ageNum);
   const heightError =
     unitSystem === 'imperial'
       ? heightFtNum === null || heightInNum === null || heightFtNum < 3 || heightFtNum > 8

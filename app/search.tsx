@@ -204,7 +204,7 @@ export default function SearchScreen() {
   }
 
   return (
-    <Screen blobs="B1">
+    <Screen blobs="B1" edges={{ top: true, bottom: true }}>
       <KeyboardAvoidingView
         style={styles.flex}
         behavior="padding"

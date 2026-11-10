@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { safeBack } from '@/utils/navigation';
@@ -75,26 +75,54 @@ export default function FoodDetailsScreen() {
   const setDraftSlot = useMealStore((state) => state.setDraftSlot);
   const { show } = useToast();
 
-  const hydrate = useCallback((next: Food) => {
+  const applyFood = (next: Food) => {
     setBaseFood(next);
     setAmount(getBaseServing(next));
     setUnit(next.servingUnit?.trim() || 'g');
     setError(null);
     setIsLoading(false);
-  }, []);
+  };
 
-  useEffect(() => {
+  const sourceKey = editDraftId
+    ? `draft:${editDraftId}:${draftFood ? 'ready' : 'missing'}:${retryKey}`
+    : editMealId && Number.isFinite(editIndex)
+      ? `meal:${editMealId}:${editIndex}:${retryKey}`
+      : id
+        ? `food:${id}:${retryKey}`
+        : `missing:${retryKey}`;
+  const [appliedKey, setAppliedKey] = useState<string | null>(null);
+
+  if (appliedKey !== sourceKey && (editDraftId || (!editMealId && id && foodCache.get(id)) || (!id && !editMealId))) {
+    setAppliedKey(sourceKey);
     if (editDraftId) {
-      if (draftFood) {
-        hydrate(draftFood);
-      } else {
+      if (draftFood) applyFood(draftFood);
+      else {
         setError('Food not found.');
         setIsLoading(false);
       }
+    } else if (id) {
+      const cached = foodCache.get(id);
+      if (cached) applyFood(cached);
+    } else {
+      setError('Food not found.');
+      setIsLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    if (editDraftId || (!editMealId && id && foodCache.get(id)) || (!id && !editMealId)) {
       return;
     }
+    let cancelled = false;
+    const applyLoaded = (next: Food) => {
+      if (cancelled) return;
+      setBaseFood(next);
+      setAmount(getBaseServing(next));
+      setUnit(next.servingUnit?.trim() || 'g');
+      setError(null);
+      setIsLoading(false);
+    };
     if (editMealId && Number.isFinite(editIndex)) {
-      let cancelled = false;
       void mealStorage.getMeal(editMealId).then((meal) => {
         if (cancelled) return;
         const next = meal?.foods[editIndex];
@@ -103,28 +131,17 @@ export default function FoodDetailsScreen() {
           setIsLoading(false);
           return;
         }
-        hydrate(next);
+        applyLoaded(next);
       });
       return () => {
         cancelled = true;
       };
     }
-    if (!id) {
-      setError('Food not found.');
-      setIsLoading(false);
-      return;
-    }
-    const cached = foodCache.get(id);
-    if (cached) {
-      hydrate(cached);
-      return;
-    }
-    let cancelled = false;
+    if (!id) return;
     const fetchDetails = async () => {
       try {
         const nextFood = await getFoodById(id);
-        if (cancelled) return;
-        hydrate(nextFood);
+        applyLoaded(nextFood);
       } catch (err) {
         if (cancelled) return;
         setError(err instanceof Error ? err.message : 'Could not load food details.');
@@ -135,7 +152,7 @@ export default function FoodDetailsScreen() {
     return () => {
       cancelled = true;
     };
-  }, [id, retryKey, editDraftId, editMealId, editIndex, draftFood, hydrate]);
+  }, [id, retryKey, editDraftId, editMealId, editIndex]);
 
   const handleUnitChange = (nextUnit: string) => {
     if (!baseFood || nextUnit === unit) return;
@@ -150,7 +167,7 @@ export default function FoodDetailsScreen() {
 
   if (isLoading) {
     return (
-      <Screen>
+      <Screen edges={{ top: true, bottom: true }}>
         <TopBar title={isEditing ? 'Edit food' : 'Food details'} />
         <LoadingState message="Loading nutrition info..." />
       </Screen>
@@ -159,7 +176,7 @@ export default function FoodDetailsScreen() {
 
   if (error || !baseFood) {
     return (
-      <Screen>
+      <Screen edges={{ top: true, bottom: true }}>
         <TopBar title={isEditing ? 'Edit food' : 'Food details'} />
         <ErrorState
           message={error || 'Food not found.'}
@@ -203,7 +220,7 @@ export default function FoodDetailsScreen() {
   };
 
   return (
-    <Screen blobs="B1">
+    <Screen blobs="B1" edges={{ top: true, bottom: true }}>
       <TopBar
         title={isEditing ? 'Edit food' : 'Food details'}
         right={FEATURES.favourites ? <IconSquare name="star" accessibilityLabel="Favourite" /> : undefined}

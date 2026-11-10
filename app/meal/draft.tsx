@@ -109,7 +109,7 @@ export default function DraftMealScreen() {
   };
 
   return (
-    <Screen blobs="B1">
+    <Screen blobs="B1" edges={{ top: true, bottom: true }}>
       <TopBar title="Current meal" />
       <LoggingDateNote />
       {draftMeal.length === 0 ? (

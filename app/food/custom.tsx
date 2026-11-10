@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { safeBack } from '@/utils/navigation';
@@ -62,7 +62,8 @@ export default function CustomFoodScreen() {
   const [sodium, setSodium] = useState('');
   const [more, setMore] = useState(false);
   const [existingId, setExistingId] = useState<string | null>(editDraftId ?? null);
-  const filled = useRef(false);
+  const draftFood = editDraftId ? draftMeal.find((item) => item.id === editDraftId) : undefined;
+  const [filledKey, setFilledKey] = useState<string | null>(null);
 
   const fillFromFood = (food: Food) => {
     setExistingId(food.id);
@@ -77,27 +78,24 @@ export default function CustomFoodScreen() {
     setSugar(fieldValue(food.sugar));
     setSodium(fieldValue(food.sodium));
     setMore(food.sugar !== undefined || food.sodium !== undefined);
-    filled.current = true;
   };
 
+  if (draftFood && filledKey !== draftFood.id) {
+    setFilledKey(draftFood.id);
+    fillFromFood(draftFood);
+  }
+
   useEffect(() => {
-    if (filled.current) return;
-    if (editDraftId) {
-      const food = draftMeal.find((item) => item.id === editDraftId);
-      if (food) fillFromFood(food);
-      return;
-    }
-    if (editMealId && Number.isFinite(editIndex)) {
-      let cancelled = false;
-      void mealStorage.getMeal(editMealId).then((meal) => {
-        const food = meal?.foods[editIndex];
-        if (!cancelled && food) fillFromFood(food);
-      });
-      return () => {
-        cancelled = true;
-      };
-    }
-  }, [editDraftId, editMealId, editIndex, draftMeal]);
+    if (editDraftId || !(editMealId && Number.isFinite(editIndex))) return;
+    let cancelled = false;
+    void mealStorage.getMeal(editMealId).then((meal) => {
+      const food = meal?.foods[editIndex];
+      if (!cancelled && food) fillFromFood(food);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [editDraftId, editMealId, editIndex]);
 
   const servingAmount = parsePositiveNumber(serving);
   const caloriesValue = parseOptionalNumber(calories);
@@ -222,7 +220,7 @@ export default function CustomFoodScreen() {
   const unitOptions = useMemo(() => SERVING_UNIT_OPTIONS, []);
 
   return (
-    <Screen blobs="B1">
+    <Screen blobs="B1" edges={{ top: true, bottom: true }}>
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <TopBar title={isEditing ? 'Edit food' : 'Custom food'} />
         <LoggingDateNote />

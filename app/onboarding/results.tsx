@@ -6,7 +6,8 @@ import { GlassCard, LogoMark, RaisedCard, Screen, Slider } from '@/components/ui
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { useOnboardingStore } from '@/store/onboardingStore';
 import { useUserStore } from '@/store/userStore';
-import { calculateGoals, goalLabel, percentsToSplit, rebalanceMacros, waterTargetMl } from '@/utils/goals';
+import { calculateGoals, goalLabel, NUTRITION_ESTIMATE_NOTE, percentsToSplit, rebalanceMacros, waterTargetMl } from '@/utils/goals';
+import { useTheme } from '@/hooks/useTheme';
 import { colors } from '@/theme/colors';
 import { fonts } from '@/theme/fonts';
 import { typography } from '@/theme/typography';
@@ -30,6 +31,7 @@ export default function OnboardingResults() {
   const macroPercents = useOnboardingStore((s) => s.macroPercents);
   const patch = useOnboardingStore((s) => s.patch);
   const [saving, setSaving] = useState(false);
+  const { colors: themeColors } = useTheme();
 
   const profile: UserProfile = {
     name: name.trim(),
@@ -73,6 +75,12 @@ export default function OnboardingResults() {
             {goals.targetCalories.toLocaleString()}
           </Text>
           <Text style={styles.calUnit}>kcal per day</Text>
+          {goals.targetRaisedToFloor ? (
+            <Text style={[styles.floorNote, { color: themeColors.inkSecondary }]}>
+              Raised to a safe minimum for your age.
+            </Text>
+          ) : null}
+          <Text style={[styles.floorNote, { color: themeColors.inkMuted }]}>{NUTRITION_ESTIMATE_NOTE}</Text>
         </GlassCard>
         <RaisedCard padding={20} radiusValue={26} style={styles.sliders}>
           {(
@@ -170,6 +178,11 @@ const styles = StyleSheet.create({
     fontFamily: fonts.manropeBold,
     fontWeight: '600',
     color: colors.muted,
+  },
+  floorNote: {
+    ...typography.caption,
+    textAlign: 'center',
+    marginTop: 8,
   },
   sliders: {
     marginTop: 18,

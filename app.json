@@ -13,10 +13,6 @@
       "backgroundColor": "#E6EBF2",
       "translucent": false
     },
-    "androidNavigationBar": {
-      "barStyle": "dark-content",
-      "backgroundColor": "#E6EBF2"
-    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.muddasirhayat.mealytics",
@@ -28,10 +24,15 @@
         "backgroundColor": "#5B5FEF",
         "monochromeImage": "./assets/brand/monochrome-icon.png"
       },
+      "allowBackup": false,
       "blockedPermissions": [
         "android.permission.READ_EXTERNAL_STORAGE",
         "android.permission.WRITE_EXTERNAL_STORAGE",
-        "android.permission.SYSTEM_ALERT_WINDOW"
+        "android.permission.SYSTEM_ALERT_WINDOW",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK",
+        "android.permission.FOREGROUND_SERVICE_MICROPHONE"
       ],
       "predictiveBackGestureEnabled": false,
       "softwareKeyboardLayoutMode": "resize",
@@ -60,7 +61,22 @@
       "expo-status-bar",
       "expo-font",
       "expo-system-ui",
-      "expo-audio",
+      [
+        "expo-audio",
+        {
+          "microphonePermission": false,
+          "recordAudioAndroid": false,
+          "enableBackgroundRecording": false,
+          "enableBackgroundPlayback": false
+        }
+      ],
+      [
+        "expo-navigation-bar",
+        {
+          "enforceContrast": false,
+          "style": "dark"
+        }
+      ],
       "expo-image",
       [
         "expo-build-properties",
@@ -75,7 +91,8 @@
             "newArchEnabled": true
           }
         }
-      ]
+      ],
+      "expo-asset"
     ],
     "experiments": {
       "typedRoutes": true,

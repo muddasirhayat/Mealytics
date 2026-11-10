@@ -29,4 +29,6 @@ export interface UserGoals {
   targetFat: number;     // in grams
   targetFiber: number;   // in grams
   bmi: number;
+  /** True when a deficit was lifted so the target stays at the age floor. */
+  targetRaisedToFloor: boolean;
 }
