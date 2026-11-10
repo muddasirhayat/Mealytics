@@ -18,5 +18,7 @@ describe('Play production config', () => {
   it('bumps the Android version code and keeps backup off', () => {
     expect(app.expo.android.versionCode).toBeGreaterThan(1);
     expect(app.expo.android.allowBackup).toBe(false);
+    expect(app.expo.android.package).toBe('com.codixr.mealytics');
+    expect(app.expo.ios.bundleIdentifier).toBe('com.codixr.mealytics');
   });
 });

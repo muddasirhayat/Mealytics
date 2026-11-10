@@ -2,7 +2,7 @@
 
 Last updated: 10 November 2026
 
-Mealytics is a meal and water logger made by Muddasir Hayat and published by Codixr (`hello@codixr.com`). This policy describes the Android app distributed as `com.muddasirhayat.mealytics`.
+Mealytics is a meal and water logger published by Codixr (`support@codixr.com`). This policy describes the Android app distributed as `com.codixr.mealytics`.
 
 Mealytics is for people 13 and older. It is not directed at children under 13, and the app does not let you set an age below 13.
 
@@ -47,4 +47,4 @@ If this policy changes in a meaningful way, the date at the top will change and 
 
 ## Contact
 
-Email `hello@codixr.com` with privacy questions.
+Email `support@codixr.com` with privacy questions.

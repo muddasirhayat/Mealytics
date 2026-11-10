@@ -2,7 +2,7 @@
 
 Last updated: 10 November 2026
 
-These terms cover the Mealytics app published by Codixr for Muddasir Hayat. By using the app you agree to them. If you do not agree, do not use the app.
+These terms cover the Mealytics app published by Codixr. By using the app you agree to them. If you do not agree, do not use the app.
 
 Mealytics is for people 13 and older.
 
@@ -26,7 +26,7 @@ Do not misuse the app, try to break its security, or use it to harm someone else
 
 ## The app is provided as is
 
-The app is provided “as is.” To the extent the law allows, Codixr and Muddasir Hayat are not liable for decisions you make from the estimates in the app, for lost logs if the device is damaged or wiped, or for errors in third-party nutrition data. Some places do not allow certain limits on liability. In those places, the limits apply only as far as the law allows.
+The app is provided “as is.” To the extent the law allows, Codixr is not liable for decisions you make from the estimates in the app, for lost logs if the device is damaged or wiped, or for errors in third-party nutrition data. Some places do not allow certain limits on liability. In those places, the limits apply only as far as the law allows.
 
 ## Changes and ending use
 
@@ -34,6 +34,6 @@ We may update the app and these terms. The date above will change when the terms
 
 ## Contact
 
-Questions about these terms: `hello@codixr.com`.
+Questions about these terms: `support@codixr.com`.
 
-The country whose courts and law govern these terms should be added here by Codixr before this page is published.
+These terms are governed by the laws of Pakistan. If a dispute cannot be resolved by contacting us, the courts of Pakistan will handle it.

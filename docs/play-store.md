@@ -1,6 +1,6 @@
 # Mealytics on Google Play
 
-Package: `com.muddasirhayat.mealytics`  
+Package: `com.codixr.mealytics`  
 Version name: `1.0.0`  
 Version code: `2` in `app.json` (`android.versionCode`). EAS `autoIncrement` will raise it on later builds.  
 If Play Console already has a version code of 2 or higher from the October build, set `android.versionCode` above that number before uploading.
@@ -49,8 +49,29 @@ These files are not in the repo. Export them before filling the store listing.
 | Full description | Say what the app does, that the diary stays on the device, that online search uses Open Food Facts, that targets are estimates, and that it is for ages 13 and up. Mention USDA FoodData Central for the bundled catalog and Open Food Facts (ODbL). |
 | Privacy policy URL | `https://codixr.com/mealytics/privacy` |
 | Terms URL | `https://codixr.com/mealytics/terms` (linked in the app; not a Play field) |
+| Contact | `support@codixr.com`. Publisher name on the listing: Codixr. |
 
 The adaptive icon foreground is the full logo. Check a circle mask on a device before treating the launcher icon as final. The monochrome icon is a ring, not the face.
+
+## Phone screenshots
+
+`tools/play-screenshots.sh` saves PNGs from a connected Android device or emulator into `store/play-screenshots/`. Install a release or preview build of `com.codixr.mealytics`, then:
+
+```bash
+chmod +x tools/play-screenshots.sh
+./tools/play-screenshots.sh
+```
+
+The script waits at each step. Navigate to the screen it names, then press Enter. It captures:
+
+1. Today, light
+2. Search with results
+3. Logs
+4. Quick meals
+5. Profile
+6. Today, dark (switch Appearance first)
+
+Use a phone-sized device, ideally 1080×2400 or another 9:16 display, so the files can go straight into Play Console. Play accepts 2–8 phone screenshots. Crop to 9:16 if the device frame includes a different ratio. Do not commit the PNGs.
 
 ## Release build checks
 
