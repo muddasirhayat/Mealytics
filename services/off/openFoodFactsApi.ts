@@ -142,8 +142,10 @@ const searchCgi = async (query: string): Promise<Food[]> => {
 
 export const openFoodFactsApi = {
   async searchFoods(query: string): Promise<Food[]> {
+    let sawSuccess = false;
     try {
       const hits = await searchAlicious(query);
+      sawSuccess = true;
       if (hits.length > 0) {
         return hits;
       }
@@ -155,7 +157,8 @@ export const openFoodFactsApi = {
       return await searchCgi(query);
     } catch (error) {
       logWarn('[food-search] Open Food Facts CGI search failed', error);
-      return [];
+      if (sawSuccess) return [];
+      throw error;
     }
   },
 

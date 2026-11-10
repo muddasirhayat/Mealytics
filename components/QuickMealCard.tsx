@@ -1,6 +1,5 @@
 import React, { memo, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { QuickMeal } from '@/types/quickMeal';
 import { Food } from '@/types/food';
@@ -11,7 +10,6 @@ import { fonts } from '@/theme/fonts';
 import { typography } from '@/theme/typography';
 import { RaisedCard, IconSquare, MacroDots, PlusButton } from '@/components/ui';
 import { useToast } from '@/components/ui/Toast';
-import { PressableScale } from '@/components/ui/PressableScale';
 
 const iconForTags = (tags: string[]): keyof typeof Feather.glyphMap => {
   if (tags.includes('high-protein')) return 'zap';
@@ -26,13 +24,21 @@ type QuickMealCardProps = {
 };
 
 export const QuickMealCard = memo(function QuickMealCard({ meal, kcalLeft }: QuickMealCardProps) {
-  const router = useRouter();
   const { colors } = useTheme();
   const addFoodToMeal = useMealStore((state) => state.addFoodToMeal);
+  const removeFoodFromMeal = useMealStore((state) => state.removeFoodFromMeal);
   const { show } = useToast();
   const [added, setAdded] = useState(false);
+  const addedId = useRef<string | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const overBudget = kcalLeft !== undefined && meal.calories > kcalLeft;
+
+  const undoAdd = () => {
+    if (addedId.current) removeFoodFromMeal(addedId.current);
+    addedId.current = null;
+    setAdded(false);
+    if (timer.current) clearTimeout(timer.current);
+  };
 
   const handleAdd = () => {
     const foodItem: Food = {
@@ -50,18 +56,18 @@ export const QuickMealCard = memo(function QuickMealCard({ meal, kcalLeft }: Qui
       nutrients: [],
     };
     addFoodToMeal(foodItem);
+    addedId.current = foodItem.id;
     setAdded(true);
     show(`Added ${meal.name}`, {
-      label: 'View meal',
-      onPress: () => router.push('/meal/draft'),
+      label: 'Undo',
+      onPress: undoAdd,
     });
     if (timer.current) clearTimeout(timer.current);
     timer.current = setTimeout(() => setAdded(false), 2500);
   };
 
   return (
-    <PressableScale>
-      <RaisedCard padding={16} radiusValue={22} style={styles.card}>
+    <RaisedCard padding={16} radiusValue={22} style={styles.card}>
         <View style={styles.top}>
           <IconSquare name={iconForTags(meal.tags)} insetStyle color={colors.ink} />
           <View style={styles.nameWrap}>
@@ -92,7 +98,7 @@ export const QuickMealCard = memo(function QuickMealCard({ meal, kcalLeft }: Qui
         <View style={styles.footer}>
           <PlusButton
             checked={added}
-            onPress={added ? () => router.push('/meal/draft') : handleAdd}
+            onPress={added ? undoAdd : handleAdd}
             accessibilityLabel={added ? `Added ${meal.name}` : `Add ${meal.name}`}
           />
           <Text style={[styles.addLabel, { color: colors.inkSecondary }]}>
@@ -100,7 +106,6 @@ export const QuickMealCard = memo(function QuickMealCard({ meal, kcalLeft }: Qui
           </Text>
         </View>
       </RaisedCard>
-    </PressableScale>
   );
 });
 

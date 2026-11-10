@@ -1,4 +1,7 @@
 import { storage } from './storage';
+import { createWriteQueue } from './writeQueue';
+
+const enqueue = createWriteQueue();
 
 const getWaterKey = (date: Date) => {
   const yyyy = date.getFullYear();
@@ -14,23 +17,29 @@ export const waterStorage = {
     return amount ?? 0;
   },
 
-  async addWater(amountMl: number, date: Date = new Date()): Promise<number> {
-    const key = getWaterKey(date);
-    const current = await this.getWater(date);
-    const updated = Math.max(0, current + amountMl);
-    await storage.setItem(key, updated);
-    return updated;
+  addWater(amountMl: number, date: Date = new Date()): Promise<number> {
+    return enqueue(async () => {
+      const key = getWaterKey(date);
+      const current = await this.getWater(date);
+      const updated = Math.max(0, current + amountMl);
+      await storage.setItem(key, updated);
+      return updated;
+    });
   },
 
-  async setWater(amountMl: number, date: Date = new Date()): Promise<number> {
-    const key = getWaterKey(date);
-    const updated = Math.max(0, amountMl);
-    await storage.setItem(key, updated);
-    return updated;
+  setWater(amountMl: number, date: Date = new Date()): Promise<number> {
+    return enqueue(async () => {
+      const key = getWaterKey(date);
+      const updated = Math.max(0, amountMl);
+      await storage.setItem(key, updated);
+      return updated;
+    });
   },
 
-  async resetWater(date: Date = new Date()): Promise<void> {
-    const key = getWaterKey(date);
-    await storage.removeItem(key);
+  resetWater(date: Date = new Date()): Promise<void> {
+    return enqueue(async () => {
+      const key = getWaterKey(date);
+      await storage.removeItem(key);
+    });
   }
 };
