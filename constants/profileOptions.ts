@@ -73,8 +73,16 @@ export const GOAL_OPTIONS: {
   },
 ];
 
+/** Mealytics is not for children under 13. */
 export const AGE_MIN = 13;
 export const AGE_MAX = 100;
+
+export const ageValidationMessage = (age: number | null): string | undefined => {
+  if (age === null || age < AGE_MIN || age > AGE_MAX) {
+    return `Enter an age between ${AGE_MIN} and ${AGE_MAX}.`;
+  }
+  return undefined;
+};
 export const HEIGHT_CM_MIN = 100;
 export const HEIGHT_CM_MAX = 250;
 export const WEIGHT_KG_MIN = 30;

@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { router, Stack, type ErrorBoundaryProps } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { NavigationBar } from 'expo-navigation-bar';
 import { useFonts } from 'expo-font';
 import {
   Outfit_500Medium,
@@ -101,6 +102,7 @@ function RootNavigator() {
   return (
     <AnimatedSplashScreen ready={ready}>
       <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
+      <NavigationBar style={scheme === 'dark' ? 'light' : 'dark'} />
       <ToastProvider>
         <Stack
           screenOptions={{

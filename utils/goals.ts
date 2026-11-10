@@ -1,4 +1,15 @@
+import { AGE_MIN } from '@/constants/profileOptions';
 import { UserProfile, UserGoals, type MacroSplit } from '@/types/user';
+
+/** Safe daily calorie floors. A cut must not land under these. */
+export const CALORIE_FLOOR_ADULT = 1200;
+export const CALORIE_FLOOR_MINOR = 1600;
+export const ADULT_AGE = 18;
+
+export const NUTRITION_ESTIMATE_NOTE = 'Estimate for logging. Not medical advice.';
+
+export const calorieFloorForAge = (age: number): number =>
+  age >= ADULT_AGE ? CALORIE_FLOOR_ADULT : CALORIE_FLOOR_MINOR;
 
 export const MACRO_SPLIT: MacroSplit = {
   protein: 0.3,
@@ -83,8 +94,9 @@ export const rebalanceMacros = (
 export const calculateGoals = (profile: UserProfile): UserGoals => {
   const heightM = profile.heightCm / 100;
   const bmi = profile.weightKg / (heightM * heightM);
+  const age = Number.isFinite(profile.age) ? Math.max(profile.age, AGE_MIN) : AGE_MIN;
 
-  let bmr = (10 * profile.weightKg) + (6.25 * profile.heightCm) - (5 * profile.age);
+  let bmr = (10 * profile.weightKg) + (6.25 * profile.heightCm) - (5 * age);
   if (profile.gender === 'male') {
     bmr += 5;
   } else {
@@ -92,7 +104,9 @@ export const calculateGoals = (profile: UserProfile): UserGoals => {
   }
 
   const tdee = bmr * ACTIVITY_MULTIPLIERS[profile.activityLevel];
-  const targetCalories = Math.round(tdee + GOAL_ADJUSTMENTS[profile.goalType]);
+  const rawTarget = Math.round(tdee + GOAL_ADJUSTMENTS[profile.goalType]);
+  const floor = calorieFloorForAge(age);
+  const targetCalories = Math.max(floor, rawTarget);
 
   const split = profile.macroSplit ?? MACRO_SPLIT;
   const targetProtein = Math.round((targetCalories * split.protein) / 4);
@@ -107,5 +121,6 @@ export const calculateGoals = (profile: UserProfile): UserGoals => {
     targetFat,
     targetFiber,
     bmi: Number(bmi.toFixed(1)),
+    targetRaisedToFloor: targetCalories > rawTarget,
   };
 };

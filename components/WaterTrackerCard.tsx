@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
@@ -23,22 +23,23 @@ type WaterTrackerCardProps = {
 
 export const WaterTrackerCard = ({ dailyTargetMl = 2000, dateMs }: WaterTrackerCardProps) => {
   const { colors } = useTheme();
-  const dayMs = startOfDayMs(dateMs ?? Date.now());
+  const [mountedAt] = useState(() => Date.now());
+  const dayMs = startOfDayMs(dateMs ?? mountedAt);
   const day = startOfDay(dayMs);
   const loggingToday = isTodayMs(dayMs);
   const [currentMl, setCurrentMl] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
   const [ready, setReady] = useState(false);
+  const [knownDay, setKnownDay] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [celebrate, setCelebrate] = useState(false);
-  const knownValue = useRef(false);
   const fill = useSharedValue(0);
 
   const load = useCallback(async () => {
     try {
       const amount = await waterStorage.getWater(startOfDay(dayMs));
       setCurrentMl(amount);
-      knownValue.current = true;
+      setKnownDay(dayMs);
     } finally {
       setReady(true);
     }
@@ -87,7 +88,7 @@ export const WaterTrackerCard = ({ dailyTargetMl = 2000, dateMs }: WaterTrackerC
     }
   };
 
-  const amountLabel = knownValue.current
+  const amountLabel = knownDay === dayMs
     ? reached
       ? overMl > 0
         ? `${currentMl.toLocaleString()} / ${dailyTargetMl.toLocaleString()} ml · ${overMl.toLocaleString()} over`
