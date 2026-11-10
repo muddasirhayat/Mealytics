@@ -29,7 +29,7 @@ python tools/usda-build/build_foods.py
 
 ## Production builds
 
-Do not set `EXPO_PUBLIC_USDA_API_KEY` for the Play build. The production profile forces that variable to empty so a project-wide EAS value is not compiled into the AAB. Search uses the bundled catalog, then Open Food Facts.
+Do not set `EXPO_PUBLIC_USDA_API_KEY` on the EAS production environment. If it is unset, it is not compiled into the AAB. Search uses the bundled catalog, then Open Food Facts.
 
 ```bash
 npx eas-cli build --platform android --profile production

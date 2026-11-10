@@ -2,14 +2,13 @@
 
 Package: `com.codixr.mealytics`  
 Version name: `1.0.0`  
-Version code: `2` in `app.json` (`android.versionCode`). EAS `autoIncrement` will raise it on later builds.  
-If Play Console already has a version code of 2 or higher from the October build, set `android.versionCode` above that number before uploading.
+Version code: EAS remote versioning (`cli.appVersionSource: remote`), currently 3. `android.versionCode` is not set in `app.json`. `autoIncrement` raises it on later production builds.
 
 The production profile builds an Android App Bundle and submits a **draft** to the closed testing track. In the Play Developer API that track is named `alpha`. Internal testing does not count toward the 12-tester requirement.
 
 ## USDA key
 
-Leave `EXPO_PUBLIC_USDA_API_KEY` unset in the EAS production environment. `eas.json` sets it to an empty string for the production profile so it is not compiled into the AAB. Confirm in the EAS dashboard that no production secret overrides that empty value. A key inside the app can be extracted from the bundle.
+Leave `EXPO_PUBLIC_USDA_API_KEY` unset in the EAS production environment. It is not listed in `eas.json`, so an unset variable is not compiled into the AAB. Do not add it as a production secret. A key inside the app can be extracted from the bundle.
 
 ## Closed testing
 

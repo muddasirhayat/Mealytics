@@ -36,8 +36,7 @@
       ],
       "predictiveBackGestureEnabled": false,
       "softwareKeyboardLayoutMode": "resize",
-      "package": "com.codixr.mealytics",
-      "versionCode": 2
+      "package": "com.codixr.mealytics"
     },
     "web": {
       "output": "static",
