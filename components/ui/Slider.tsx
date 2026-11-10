@@ -3,6 +3,7 @@ import { LayoutChangeEvent, StyleSheet, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { runOnJS, useSharedValue } from 'react-native-reanimated';
 import { useThemeColors } from '@/hooks/useThemeColors';
+import { webNoSelect } from '@/utils/web';
 import { inset, raiseSm } from '@/utils/shadow';
 
 type SliderProps = {
@@ -82,7 +83,7 @@ export const Slider = ({
           if (event.nativeEvent.actionName === 'increment') onChange(clamp(value + step));
           if (event.nativeEvent.actionName === 'decrement') onChange(clamp(value - step));
         }}
-        style={styles.hit}
+        style={[styles.hit, webNoSelect]}
       >
         <View style={[styles.track, inset(), { backgroundColor: colors.base }]}>
           <View style={[styles.fill, { width: `${ratio * 100}%`, backgroundColor: fillColor }]} />

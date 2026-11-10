@@ -2,6 +2,7 @@ import React, { useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { stickyCtaScrollPadding } from '@/constants/layout';
 import { Feather } from '@expo/vector-icons';
 import { Chip, GlassCard, LogoMark, PrimaryButton, RaisedCard, Screen } from '@/components/ui';
 import { IconSquare } from '@/components/ui/IconSquare';
@@ -167,6 +168,8 @@ export default function OnboardingIntro() {
         ref={scrollRef}
         horizontal
         pagingEnabled
+        style={styles.pager}
+        contentContainerStyle={{ paddingBottom: stickyCtaScrollPadding(insets.bottom, 28) }}
         showsHorizontalScrollIndicator={false}
         onMomentumScrollEnd={(event) => {
           const next = Math.round(event.nativeEvent.contentOffset.x / width);
@@ -213,6 +216,10 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
     color: colors.muted,
+  },
+  pager: {
+    flex: 1,
+    minHeight: 0,
   },
   page: {
     paddingHorizontal: 24,

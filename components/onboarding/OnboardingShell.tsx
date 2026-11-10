@@ -9,6 +9,7 @@ import { useThemeColors } from '@/hooks/useThemeColors';
 import { fonts } from '@/theme/fonts';
 import { typography } from '@/theme/typography';
 import type { Feather } from '@expo/vector-icons';
+import { stickyCtaScrollPadding } from '@/constants/layout';
 
 const STEPS = 7;
 
@@ -76,7 +77,10 @@ export const OnboardingShell = ({
         {scroll ? (
           <ScrollView
             style={styles.scroll}
-            contentContainerStyle={styles.scrollContent}
+            contentContainerStyle={[
+              styles.scrollContent,
+              { paddingBottom: stickyCtaScrollPadding(insets.bottom) },
+            ]}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
           >
@@ -136,10 +140,10 @@ const styles = StyleSheet.create({
   },
   scroll: {
     flex: 1,
+    minHeight: 0,
   },
   scrollContent: {
     flexGrow: 1,
-    paddingBottom: 16,
   },
   title: {
     ...typography.question,

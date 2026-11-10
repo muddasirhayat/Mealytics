@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { stickyCtaScrollPadding } from '@/constants/layout';
 import { useLocalSearchParams } from 'expo-router';
 import { safeBack } from '@/utils/navigation';
 import { Food } from '@/types/food';
@@ -33,6 +35,7 @@ const fieldValue = (value?: number) => (value === undefined ? '' : String(value)
 
 export default function CustomFoodScreen() {
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
   const styles = makeStyles(colors);
   const params = useLocalSearchParams<{
     editDraftId?: string | string[];
@@ -227,7 +230,11 @@ export default function CustomFoodScreen() {
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <TopBar title={isEditing ? 'Edit food' : 'Custom food'} />
         <LoggingDateNote />
-        <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
+        <ScrollView
+          style={styles.scroller}
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={[styles.content, { paddingBottom: stickyCtaScrollPadding(insets.bottom) }]}
+        >
           <View style={styles.row}>
             <InsetField label="Food name" value={name} onChangeText={setName} placeholder="e.g. Homemade daal" error={name.length ? nameError : undefined} />
             <InsetField
@@ -300,9 +307,12 @@ export default function CustomFoodScreen() {
 
 const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   flex: { flex: 1 },
+  scroller: {
+    flex: 1,
+    minHeight: 0,
+  },
   content: {
     gap: 14,
-    paddingBottom: 24,
   },
   row: {
     flexDirection: 'row',

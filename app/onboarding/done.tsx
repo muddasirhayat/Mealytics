@@ -1,7 +1,8 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { stickyCtaScrollPadding } from '@/constants/layout';
 import { Feather } from '@expo/vector-icons';
 import { PrimaryButton, Screen } from '@/components/ui';
 import { useOnboardingStore } from '@/store/onboardingStore';
@@ -27,7 +28,11 @@ export default function OnboardingDone() {
 
   return (
     <Screen blobs="B2" padded={false} edges={{ top: true, bottom: false }}>
-      <View style={styles.body}>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={[styles.body, { paddingBottom: stickyCtaScrollPadding(insets.bottom, 52) }]}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={[styles.outer, raise()]} accessible={false}>
           <View style={[styles.inner, inset()]}>
             <View style={styles.check}>
@@ -42,7 +47,7 @@ export default function OnboardingDone() {
         <Text style={styles.sub}>
           Log your first meal and we will keep count of{'\n'}calories, macros and water.
         </Text>
-      </View>
+      </ScrollView>
       <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 24) }]}>
         <PrimaryButton label="Log my first meal" icon="plus" onPress={() => finish('/search')} />
         <Pressable
@@ -59,8 +64,12 @@ export default function OnboardingDone() {
 }
 
 const makeStyles = (colors: ThemeColors) => StyleSheet.create({
-  body: {
+  scroll: {
     flex: 1,
+    minHeight: 0,
+  },
+  body: {
+    flexGrow: 1,
     paddingHorizontal: 24,
     alignItems: 'center',
   },

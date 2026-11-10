@@ -1,9 +1,8 @@
 import React, { memo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Feather } from '@expo/vector-icons';
 import { Meal, MealSlot } from '@/types/meal';
-import { MEAL_SLOTS, getMealSlot } from '@/utils/mealSlot';
+import { MEAL_SLOTS, MEAL_SLOT_ICON, getMealSlot } from '@/utils/mealSlot';
 import { useTheme } from '@/hooks/useTheme';
 import { fonts } from '@/theme/fonts';
 import { typography } from '@/theme/typography';
@@ -12,13 +11,6 @@ import { IconSquare } from '@/components/ui/IconSquare';
 import { PlusButton } from '@/components/ui/PlusButton';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { useMealStore } from '@/store/mealStore';
-
-const SLOT_ICON: Record<MealSlot, keyof typeof Feather.glyphMap> = {
-  breakfast: 'coffee',
-  lunch: 'sun',
-  dinner: 'moon',
-  snacks: 'star',
-};
 
 type MealSlotListProps = {
   meals: Meal[];
@@ -29,10 +21,12 @@ const SlotRow = memo(function SlotRow({
   slotId,
   title,
   kcal,
+  foods,
 }: {
   slotId: MealSlot;
   title: string;
   kcal: number;
+  foods: string;
 }) {
   const router = useRouter();
   const { colors } = useTheme();
@@ -40,7 +34,7 @@ const SlotRow = memo(function SlotRow({
   return (
     <RaisedCard padding={14} radiusValue={22} style={styles.card}>
       <IconSquare
-        name={SLOT_ICON[slotId]}
+        name={MEAL_SLOT_ICON[slotId]}
         insetStyle={false}
         color={colors.ink}
         accessibilityLabel={title}
@@ -48,6 +42,11 @@ const SlotRow = memo(function SlotRow({
       <View style={styles.copy}>
         <Text style={[styles.title, { color: colors.ink }]}>{title}</Text>
         <Text style={[styles.kcal, { color: colors.accent }]}>{Math.round(kcal)} kcal</Text>
+        {foods ? (
+          <Text style={[styles.foods, { color: colors.inkSecondary }]} numberOfLines={2}>
+            {foods}
+          </Text>
+        ) : null}
       </View>
       <PlusButton
         onPress={() => {
@@ -71,7 +70,8 @@ export const MealSlotList = ({ meals }: MealSlotListProps) => {
       {MEAL_SLOTS.map((slot) => {
         const slotMeals = meals.filter((meal) => getMealSlot(meal) === slot.id);
         const kcal = slotMeals.reduce((sum, meal) => sum + meal.totalCalories, 0);
-        return <SlotRow key={slot.id} slotId={slot.id} title={slot.title} kcal={kcal} />;
+        const foods = slotMeals.flatMap((meal) => meal.foods.map((food) => food.name)).join(', ');
+        return <SlotRow key={slot.id} slotId={slot.id} title={slot.title} kcal={kcal} foods={foods} />;
       })}
       <PressableScale
         onPress={() => {
@@ -98,6 +98,10 @@ const styles = StyleSheet.create({
     ...typography.caption,
     fontFamily: fonts.outfitSemiBold,
     fontWeight: '600',
+    marginTop: 2,
+  },
+  foods: {
+    ...typography.caption,
     marginTop: 2,
   },
   link: { minHeight: 44, alignItems: 'center', justifyContent: 'center' },

@@ -1,6 +1,8 @@
 import React, { useCallback, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { stickyCtaScrollPadding } from '@/constants/layout';
 import { Feather } from '@expo/vector-icons';
 import { useMealStore } from '@/store/mealStore';
 import { useUserStore } from '@/store/userStore';
@@ -39,6 +41,7 @@ const SLOTS: { label: string; value: MealSlot }[] = [
 
 export default function DraftMealScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const styles = makeStyles(colors);
   const { draftMeal, draftSlot, draftDate, setDraftSlot, removeFoodFromMeal, clearDraftMeal } =
@@ -128,7 +131,11 @@ export default function DraftMealScreen() {
         </View>
       ) : (
         <>
-          <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+          <ScrollView
+            style={styles.scroller}
+            contentContainerStyle={[styles.scroll, { paddingBottom: stickyCtaScrollPadding(insets.bottom) }]}
+            showsVerticalScrollIndicator={false}
+          >
             <GlassCard padding={20} radiusValue={28}>
               <Text style={styles.meta}>
                 {getMealSlotLabel(draftSlot)} · {draftMeal.length} item{draftMeal.length === 1 ? '' : 's'}
@@ -218,9 +225,12 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     justifyContent: 'center',
     gap: 16,
   },
+  scroller: {
+    flex: 1,
+    minHeight: 0,
+  },
   scroll: {
     gap: 12,
-    paddingBottom: 24,
   },
   meta: {
     fontFamily: fonts.outfitSemiBold,
