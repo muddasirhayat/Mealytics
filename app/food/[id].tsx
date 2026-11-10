@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { stickyCtaScrollPadding } from '@/constants/layout';
 import { useLocalSearchParams } from 'expo-router';
 import { safeBack } from '@/utils/navigation';
 import { getFoodById } from '@/services/food/searchFoods';
@@ -47,6 +49,7 @@ const sourceLabel = (food: Food) => {
 
 export default function FoodDetailsScreen() {
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
   const styles = makeStyles(colors);
   const params = useLocalSearchParams<{
     id: string | string[];
@@ -229,7 +232,11 @@ export default function FoodDetailsScreen() {
         right={FEATURES.favourites ? <IconSquare name="star" accessibilityLabel="Favourite" /> : undefined}
       />
       <LoggingDateNote />
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.scroller}
+        contentContainerStyle={[styles.scroll, { paddingBottom: stickyCtaScrollPadding(insets.bottom) }]}
+        showsVerticalScrollIndicator={false}
+      >
         <GlassCard padding={20} radiusValue={28} style={styles.hero}>
           <View style={styles.heroIcon}>
             <IconSquare name="coffee" insetStyle size={64} iconSize={28} />
@@ -283,8 +290,11 @@ export default function FoodDetailsScreen() {
 }
 
 const makeStyles = (colors: ThemeColors) => StyleSheet.create({
+  scroller: {
+    flex: 1,
+    minHeight: 0,
+  },
   scroll: {
-    paddingBottom: 120,
     gap: 16,
   },
   hero: {

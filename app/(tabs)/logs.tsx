@@ -18,7 +18,8 @@ import {
   Screen,
   ScreenHeader,
 } from '@/components/ui';
-import { MEAL_SLOTS, getMealSlot, getMealSlotLabel } from '@/utils/mealSlot';
+import { MEAL_SLOTS, MEAL_SLOT_ICON, getMealSlot, getMealSlotLabel } from '@/utils/mealSlot';
+import type { MealSlot } from '@/types/meal';
 import { formatFoodServing } from '@/utils/nutrition';
 import { useTheme } from '@/hooks/useTheme';
 import { fonts } from '@/theme/fonts';
@@ -62,6 +63,7 @@ type FoodRow = {
 
 type SlotSection = {
   title: string;
+  slotId: MealSlot;
   slotKcal: number;
   data: FoodRow[];
 };
@@ -232,6 +234,7 @@ export default function LogsScreen() {
         });
         return {
           title: getMealSlotLabel(slot.id),
+          slotId: slot.id,
           slotKcal: slotMeals.reduce((sum, meal) => sum + meal.totalCalories, 0),
           data,
         };
@@ -422,7 +425,7 @@ export default function LogsScreen() {
         }
         renderSectionHeader={({ section }) => (
           <RaisedCard padding={14} radiusValue={22} style={styles.slotHeader}>
-            <IconSquare name="coffee" color={colors.ink} />
+            <IconSquare name={MEAL_SLOT_ICON[section.slotId]} color={colors.ink} />
             <Text style={[styles.slotTitle, { color: colors.ink }]}>{section.title}</Text>
             <Text style={[styles.slotKcal, { color: colors.accent }]}>
               {Math.round(section.slotKcal)} kcal

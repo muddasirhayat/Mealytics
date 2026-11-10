@@ -6,6 +6,7 @@ import Animated, {
   withSpring,
 } from 'react-native-reanimated';
 import { motion } from '@/constants/motion';
+import { webNoSelect } from '@/utils/web';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -45,7 +46,7 @@ export const PressableScale = ({
         scale.value = withSpring(1, motion.spring);
         onPressOut?.(e);
       }}
-      style={[animatedStyle, style]}
+      style={[animatedStyle, webNoSelect, style]}
     >
       {children}
     </AnimatedPressable>

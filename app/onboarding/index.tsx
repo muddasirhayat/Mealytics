@@ -9,6 +9,7 @@ import { fonts } from '@/theme/fonts';
 import { inset, raise } from '@/utils/shadow';
 import { openExternalUrl } from '@/utils/linking';
 import { PRIVACY_POLICY_URL, TERMS_URL } from '@/constants/links';
+import { stickyCtaScrollPadding } from '@/constants/layout';
 import { useToast } from '@/components/ui/Toast';
 import Svg, { Circle, Path } from 'react-native-svg';
 
@@ -28,7 +29,7 @@ export default function OnboardingWelcome() {
     <Screen blobs="default" padded={false} edges={{ top: true, bottom: false }}>
       <ScrollView
         style={styles.scroll}
-        contentContainerStyle={styles.body}
+        contentContainerStyle={[styles.body, { paddingBottom: stickyCtaScrollPadding(insets.bottom) }]}
         showsVerticalScrollIndicator={false}
         bounces={false}
       >
@@ -75,12 +76,12 @@ export default function OnboardingWelcome() {
 const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   scroll: {
     flex: 1,
+    minHeight: 0,
   },
   body: {
     flexGrow: 1,
     paddingHorizontal: 24,
     paddingTop: 20,
-    paddingBottom: 12,
   },
   logoWrap: {
     alignItems: 'center',

@@ -74,7 +74,11 @@ export const prefetchLocalFoods = (): void => {
 const splitWords = (name: string): string[] =>
   name.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
 
-const tokenWordRank = (words: string[], token: string): number => {
+/**
+ * 0 whole word, 1 short prefix (≤2 extra letters), 2 long prefix (rotisserie),
+ * 3 substring only.
+ */
+export const tokenWordRank = (words: string[], token: string): number => {
   if (words.some((word) => word === token || word === `${token}s`)) {
     return 0;
   }
@@ -87,18 +91,12 @@ const tokenWordRank = (words: string[], token: string): number => {
   return 3;
 };
 
-const rankMatch = (name: string, query: string, tokens: string[]): number => {
-  const words = splitWords(name);
-  const first = words[0] ?? '';
-  const worstTokenRank = Math.max(...tokens.map((token) => tokenWordRank(words, token)));
-  const firstIsQuery =
-    first === query ||
-    first === `${query}s` ||
-    (first.startsWith(query) && first.length - query.length <= 2);
-  if (firstIsQuery && worstTokenRank <= 1) {
-    return 0;
-  }
-  return worstTokenRank + 1;
+/** Lower is a better match. Whole words beat prefixes; long prefixes and substrings are last. */
+export const matchQuality = (label: string, query: string): number => {
+  const tokens = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  if (tokens.length === 0) return 3;
+  const words = splitWords(label);
+  return Math.max(...tokens.map((token) => tokenWordRank(words, token)));
 };
 
 export const getLocalFoodById = (id: string): Food | undefined => {
@@ -118,7 +116,7 @@ export const searchLocalFoods = (query: string): Food[] => {
     return [];
   }
 
-  const matches: { food: Food; rank: number; index: number; length: number }[] = [];
+  const matches: { food: Food; quality: number; length: number }[] = [];
   for (const food of catalog) {
     const name = food.name.toLowerCase();
     if (!tokens.every((token) => name.includes(token))) {
@@ -126,16 +124,14 @@ export const searchLocalFoods = (query: string): Food[] => {
     }
     matches.push({
       food,
-      rank: rankMatch(name, trimmed, tokens),
-      index: name.indexOf(tokens[0]),
+      quality: matchQuality(name, trimmed),
       length: name.length,
     });
   }
 
   matches.sort(
     (a, b) =>
-      a.rank - b.rank ||
-      a.index - b.index ||
+      a.quality - b.quality ||
       a.length - b.length ||
       a.food.name.localeCompare(b.food.name)
   );

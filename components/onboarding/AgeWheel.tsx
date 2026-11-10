@@ -4,6 +4,7 @@ import { useTheme } from '@/hooks/useTheme';
 import { fonts } from '@/theme/fonts';
 import { inset } from '@/utils/shadow';
 import { AGE_MAX, AGE_MIN } from '@/constants/profileOptions';
+import { webNoSelect } from '@/utils/web';
 import { useTickFeedback } from '@/hooks/useTickFeedback';
 
 const ITEM_HEIGHT = 60;
@@ -43,7 +44,7 @@ export const AgeWheel = ({ value, onChange }: AgeWheelProps) => {
 
   return (
     <View
-      style={styles.wrap}
+      style={[styles.wrap, webNoSelect]}
       accessibilityRole="adjustable"
       accessibilityLabel="Age in years"
       accessibilityValue={{ min: AGE_MIN, max: AGE_MAX, now: clamped }}
@@ -87,6 +88,7 @@ export const AgeWheel = ({ value, onChange }: AgeWheelProps) => {
               <Text
                 style={[
                   styles.num,
+                  webNoSelect,
                   {
                     color,
                     fontSize: size,

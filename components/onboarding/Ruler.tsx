@@ -9,6 +9,7 @@ import { useTheme } from '@/hooks/useTheme';
 import { fonts } from '@/theme/fonts';
 import { inset } from '@/utils/shadow';
 import { useTickFeedback } from '@/hooks/useTickFeedback';
+import { webNoSelect } from '@/utils/web';
 
 const TICK = 14;
 const RULER_WIDTH = 364;
@@ -81,6 +82,7 @@ export const Ruler = ({
     <View
       style={[
         styles.ruler,
+        webNoSelect,
         inset(),
         { backgroundColor: colors.base },
       ]}
@@ -117,7 +119,7 @@ export const Ruler = ({
             <View style={styles.tickCol}>
               {major ? (
                 <Text
-                  style={[styles.tickLabel, { color: colors.inkMuted }]}
+                  style={[styles.tickLabel, webNoSelect, { color: colors.inkMuted }]}
                   numberOfLines={1}
                   allowFontScaling={false}
                   accessible={false}

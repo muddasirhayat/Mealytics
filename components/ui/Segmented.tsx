@@ -12,6 +12,7 @@ import { typography } from '@/theme/typography';
 import { inset, raiseSm } from '@/utils/shadow';
 import { emitSelectionHaptic } from '@/hooks/useTickFeedback';
 import { usePreferencesStore } from '@/store/preferencesStore';
+import { webNoSelect } from '@/utils/web';
 
 type SegmentedProps<T extends string> = {
   options: { label: string; value: T }[];
@@ -57,6 +58,7 @@ export function Segmented<T extends string>({
       onLayout={onLayout}
       style={[
         styles.track,
+        webNoSelect,
         [inset(), { backgroundColor: colors.base }],
       ]}
       accessibilityRole="tablist"
@@ -85,11 +87,12 @@ export function Segmented<T extends string>({
             accessibilityRole="tab"
             accessibilityState={{ selected }}
             accessibilityLabel={option.label}
-            style={styles.item}
+            style={[styles.item, webNoSelect]}
           >
             <Text
               style={[
                 styles.label,
+                webNoSelect,
                 {
                   color: selected ? colors.accent : colors.muted,
                 },

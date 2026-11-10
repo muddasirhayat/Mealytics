@@ -14,6 +14,7 @@ import { ACTIVITY_OPTIONS } from '@/constants/profileOptions';
 import { cmToFtIn, kgToLbs } from '@/utils/units';
 import { typography } from '@/theme/typography';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { stickyCtaScrollPadding } from '@/constants/layout';
 import type { UserProfile } from '@/types/user';
 
 export default function OnboardingResults() {
@@ -73,7 +74,11 @@ export default function OnboardingResults() {
 
   return (
     <Screen blobs="B1" padded={false} edges={{ top: true, bottom: false }}>
-      <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={[styles.body, { paddingBottom: stickyCtaScrollPadding(insets.bottom) }]}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.top}>
           <LogoMark />
           <Text style={styles.plan}>Your plan</Text>
@@ -156,10 +161,13 @@ export default function OnboardingResults() {
 }
 
 const makeStyles = (colors: ThemeColors) => StyleSheet.create({
+  scroll: {
+    flex: 1,
+    minHeight: 0,
+  },
   body: {
     paddingHorizontal: 24,
     paddingTop: 10,
-    paddingBottom: 16,
   },
   top: {
     flexDirection: 'row',

@@ -1,4 +1,12 @@
+import type { Feather } from '@expo/vector-icons';
 import { Meal, MealSlot } from '@/types/meal';
+
+export const MEAL_SLOT_ICON: Record<MealSlot, keyof typeof Feather.glyphMap> = {
+  breakfast: 'coffee',
+  lunch: 'sun',
+  dinner: 'moon',
+  snacks: 'star',
+};
 
 export const MEAL_SLOTS: { id: MealSlot; title: string; emoji: string; timeRange: string }[] = [
   { id: 'breakfast', title: 'Breakfast', emoji: '🌅', timeRange: 'Morning' },

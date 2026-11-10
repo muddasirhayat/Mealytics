@@ -1,7 +1,7 @@
 import { Food } from '@/types/food';
 import { foodCache } from '@/services/food/foodCache';
 import { getCommonFoodById, searchCommonFoods } from '@/services/food/commonFoods';
-import { getLocalFoodById, searchLocalFoods } from '@/services/food/localFoods';
+import { getLocalFoodById, matchQuality, searchLocalFoods } from '@/services/food/localFoods';
 import { openFoodFactsApi } from '@/services/off/openFoodFactsApi';
 import { usdaApi } from '@/services/usda/usdaApi';
 import { mapUsdaFoodToInternal } from '@/services/usda/usdaMapper';
@@ -16,15 +16,6 @@ const disableUsda = () => {
   usdaDisabledUntil = Date.now() + USDA_COOLDOWN_MS;
 };
 
-const mergeFoods = (primary: Food[], secondary: Food[]): Food[] => {
-  const seenIds = new Set(primary.map((food) => food.id));
-  const seenNames = new Set(primary.map((food) => food.name.toLowerCase()));
-  const extras = secondary.filter(
-    (food) => !seenIds.has(food.id) && !seenNames.has(food.name.toLowerCase())
-  );
-  return [...primary, ...extras];
-};
-
 const searchUsdaFoods = async (query: string): Promise<Food[]> => {
   const usdaResponse = await usdaApi.searchFoods(query, 1);
   return (usdaResponse.foods ?? [])
@@ -32,10 +23,37 @@ const searchUsdaFoods = async (query: string): Promise<Food[]> => {
     .map(mapUsdaFoodToInternal);
 };
 
+const isCurated = (food: Food): boolean => food.id.startsWith('local-');
+
 export const searchOfflineFoods = (query: string): Food[] => {
   const bundled = searchLocalFoods(query);
   const common = searchCommonFoods(query);
-  const merged = mergeFoods(bundled, common);
+  const byName = new Map<string, Food>();
+  for (const food of [...common, ...bundled]) {
+    const key = food.name.toLowerCase();
+    const existing = byName.get(key);
+    if (!existing || (isCurated(food) && !isCurated(existing))) {
+      byName.set(key, food);
+    }
+  }
+
+  let ranked = [...byName.values()].map((food) => ({
+    food,
+    quality: matchQuality(food.name, query),
+  }));
+  const hasStrongMatch = ranked.some((item) => item.quality <= 1);
+  if (hasStrongMatch) {
+    ranked = ranked.filter((item) => item.quality <= 1);
+  }
+  ranked.sort(
+    (a, b) =>
+      a.quality - b.quality ||
+      Number(!isCurated(a.food)) - Number(!isCurated(b.food)) ||
+      a.food.name.length - b.food.name.length ||
+      a.food.name.localeCompare(b.food.name)
+  );
+
+  const merged = ranked.map((item) => item.food);
   foodCache.putMany(merged);
   return merged;
 };
