@@ -29,12 +29,14 @@ python tools/usda-build/build_foods.py
 
 ## Production builds
 
-Set `EXPO_PUBLIC_USDA_API_KEY` as an EAS environment variable only if you want live USDA fallback (do not commit the key), then:
+Do not set `EXPO_PUBLIC_USDA_API_KEY` for the Play build. The production profile forces that variable to empty so a project-wide EAS value is not compiled into the AAB. Search uses the bundled catalog, then Open Food Facts.
 
 ```bash
 npx eas-cli build --platform android --profile production
-npx eas-cli build --platform ios --profile production
+npx eas-cli submit --platform android --profile production
 ```
+
+`submit` sends a draft to Play's closed testing track (`alpha` in the Play API). Store listing, data safety, and screenshot specs are in `docs/play-store.md`.
 
 ## Checks
 
