@@ -5,7 +5,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { PrimaryButton, Screen } from '@/components/ui';
 import { useOnboardingStore } from '@/store/onboardingStore';
-import { colors } from '@/theme/colors';
+import { useTheme } from '@/hooks/useTheme';
+import type { ThemeColors } from '@/theme/palette';
 import { fonts } from '@/theme/fonts';
 import { inset, raise } from '@/utils/shadow';
 
@@ -13,6 +14,8 @@ export default function OnboardingDone() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const name = useOnboardingStore((s) => s.name);
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   const reset = useOnboardingStore((s) => s.reset);
   const setCelebrating = useOnboardingStore((s) => s.setCelebrating);
 
@@ -55,7 +58,7 @@ export default function OnboardingDone() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   body: {
     flex: 1,
     paddingHorizontal: 24,

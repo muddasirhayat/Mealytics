@@ -42,6 +42,14 @@ import {
   Segmented,
 } from '@/components/ui';
 import { useToast } from '@/components/ui/Toast';
+import { Slider } from '@/components/ui/Slider';
+import {
+  DEFAULT_MACRO_PERCENTS,
+  percentsToSplit,
+  rebalanceMacros,
+  splitToPercents,
+  type MacroPercents,
+} from '@/utils/goals';
 import { raiseSm } from '@/utils/shadow';
 
 const SAVE_BUTTON_HEIGHT = 62;
@@ -138,6 +146,9 @@ export default function ProfileScreen() {
   const [weightDisplay, setWeightDisplay] = useState(initial.weightDisplay);
   const [activityLevel, setActivityLevel] = useState<ActivityLevel>(initial.activityLevel);
   const [goalType, setGoalType] = useState<GoalType>(initial.goalType);
+  const [macroPercents, setMacroPercents] = useState<MacroPercents>(
+    profile?.macroSplit ? splitToPercents(profile.macroSplit) : { ...DEFAULT_MACRO_PERCENTS }
+  );
   const [isSaved, setIsSaved] = useState(false);
   const [saving, setSaving] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
@@ -158,6 +169,7 @@ export default function ProfileScreen() {
     setWeightDisplay(next.weightDisplay);
     setActivityLevel(next.activityLevel);
     setGoalType(next.goalType);
+    setMacroPercents(profile?.macroSplit ? splitToPercents(profile.macroSplit) : { ...DEFAULT_MACRO_PERCENTS });
   }
 
   const handleUnitToggle = (newSystem: UnitSystem) => {
@@ -215,7 +227,10 @@ export default function ProfileScreen() {
     (unitSystem === 'metric' ? heightCm !== baseline.heightCm : heightFt !== baseline.heightFt || heightIn !== baseline.heightIn) ||
     weightDisplay !== baseline.weightDisplay ||
     activityLevel !== baseline.activityLevel ||
-    goalType !== baseline.goalType;
+    goalType !== baseline.goalType ||
+    macroPercents.protein !== (profile?.macroSplit ? splitToPercents(profile.macroSplit).protein : DEFAULT_MACRO_PERCENTS.protein) ||
+    macroPercents.carbs !== (profile?.macroSplit ? splitToPercents(profile.macroSplit).carbs : DEFAULT_MACRO_PERCENTS.carbs) ||
+    macroPercents.fat !== (profile?.macroSplit ? splitToPercents(profile.macroSplit).fat : DEFAULT_MACRO_PERCENTS.fat);
 
   const canSave = canSaveValid && isDirty;
 
@@ -243,7 +258,7 @@ export default function ProfileScreen() {
         activityLevel,
         goalType,
         unitSystem,
-        macroSplit: profile?.macroSplit,
+        macroSplit: percentsToSplit(macroPercents),
       });
       setIsSaved(true);
       show('Saved ✓');
@@ -439,6 +454,31 @@ export default function ProfileScreen() {
             ))}
           </ScrollView>
 
+          <Text style={styles.label}>Macros</Text>
+          <Text style={styles.macroHint}>Protein, carbs, and fat stay between 10% and 60% and add up to 100%.</Text>
+          {(
+            [
+              { key: 'protein' as const, label: 'Protein', color: colors.protein },
+              { key: 'carbs' as const, label: 'Carbs', color: colors.carbs },
+              { key: 'fat' as const, label: 'Fat', color: colors.fat },
+            ]
+          ).map((row) => (
+            <View key={row.key} style={styles.sliderBlock}>
+              <Text style={styles.macroHint}>
+                {row.label} · {macroPercents[row.key]}%
+              </Text>
+              <Slider
+                value={macroPercents[row.key]}
+                min={10}
+                max={60}
+                step={1}
+                color={row.color}
+                accessibilityLabel={`${row.label} ${macroPercents[row.key]} percent`}
+                onChange={(next) => setMacroPercents((current) => rebalanceMacros(current, row.key, next))}
+              />
+            </View>
+          ))}
+
           <Text style={styles.label}>Goal</Text>
           <View style={styles.goalRow}>
             {GOALS.map((item) => (
@@ -618,6 +658,14 @@ const makeStyles = (colors: ThemeColors) =>
       color: colors.inkSecondary,
       marginBottom: 8,
       marginTop: 4,
+    },
+    macroHint: {
+      ...typography.caption,
+      color: colors.inkSecondary,
+      marginBottom: 8,
+    },
+    sliderBlock: {
+      marginBottom: 12,
     },
     chipsScroll: {
       flexDirection: 'row',

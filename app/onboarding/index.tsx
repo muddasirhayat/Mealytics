@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GlassCard, LogoMark, PrimaryButton, Screen } from '@/components/ui';
 import { useTheme } from '@/hooks/useTheme';
-import { colors } from '@/theme/colors';
+import type { ThemeColors } from '@/theme/palette';
 import { fonts } from '@/theme/fonts';
 import { inset, raise } from '@/utils/shadow';
 import { openExternalUrl } from '@/utils/linking';
@@ -17,6 +17,7 @@ export default function OnboardingWelcome() {
   const insets = useSafeAreaInsets();
   const { show } = useToast();
   const { colors } = useTheme();
+  const styles = makeStyles(colors);
 
   const openLink = async (url: string) => {
     const ok = await openExternalUrl(url);
@@ -71,7 +72,7 @@ export default function OnboardingWelcome() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   scroll: {
     flex: 1,
   },

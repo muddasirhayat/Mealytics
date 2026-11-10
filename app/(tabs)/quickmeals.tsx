@@ -9,7 +9,7 @@ import { quickMealsService } from '@/services/quickMeals/quickMealsService';
 import { QuickMeal } from '@/types/quickMeal';
 import { QuickMealCard } from '@/components/QuickMealCard';
 import { DraftMealBanner } from '@/components/DraftMealBanner';
-import { Chip, IconSquare, Screen, ScreenHeader } from '@/components/ui';
+import { Chip, Screen, ScreenHeader } from '@/components/ui';
 import { EmptyState, ErrorState } from '@/components/StateIndicators';
 import { useTheme } from '@/hooks/useTheme';
 import { typography } from '@/theme/typography';
@@ -99,10 +99,7 @@ export default function QuickMealsScreen() {
   return (
     <Screen padded={false}>
       <View style={styles.header}>
-        <ScreenHeader
-          title="Quick meals"
-          right={<IconSquare name="sliders" onPress={() => setFilter('all')} accessibilityLabel="Filters" />}
-        />
+        <ScreenHeader title="Quick meals" />
         <Text style={[styles.sub, { color: colors.inkSecondary }]}>{subtitle}</Text>
         <View style={styles.chips}>
           {FILTERS.map((item) => (

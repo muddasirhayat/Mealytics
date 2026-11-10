@@ -7,7 +7,7 @@ import { DEFAULT_MACRO_PERCENTS, type MacroPercents } from '@/utils/goals';
 export type OnboardingDraft = {
   name: string;
   goalType: GoalType;
-  gender: Gender;
+  gender: Gender | null;
   age: number;
   heightCm: number;
   weightKg: number;
@@ -27,7 +27,7 @@ type OnboardingState = OnboardingDraft & {
 const defaults = (): OnboardingDraft => ({
   name: '',
   goalType: 'maintain',
-  gender: 'male',
+  gender: null,
   age: 29,
   heightCm: 170,
   weightKg: 70,

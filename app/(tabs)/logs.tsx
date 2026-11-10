@@ -282,10 +282,7 @@ export default function LogsScreen() {
         stickySectionHeadersEnabled={false}
         ListHeaderComponent={
           <View>
-            <ScreenHeader
-              title="Logs"
-              right={<IconSquare name="calendar" accessibilityLabel="Calendar" />}
-            />
+            <ScreenHeader title="Logs" />
             <GlassCard padding={18} radiusValue={28} style={styles.weekCard}>
               <Text style={[styles.weekTitle, { color: colors.ink }]}>This week</Text>
               <Text style={[styles.weekMeta, { color: colors.inkSecondary }]}>

@@ -24,7 +24,8 @@ import { createId } from '@/utils/id';
 import { formatLogDate, isTodayMs, mealTimestampForDate } from '@/utils/date';
 import { pushFoodEdit } from '@/utils/foodEdit';
 import { MealSlot } from '@/types/meal';
-import { colors } from '@/theme/colors';
+import { useTheme } from '@/hooks/useTheme';
+import type { ThemeColors } from '@/theme/palette';
 import { fonts } from '@/theme/fonts';
 import { typography } from '@/theme/typography';
 import { inset } from '@/utils/shadow';
@@ -38,6 +39,8 @@ const SLOTS: { label: string; value: MealSlot }[] = [
 
 export default function DraftMealScreen() {
   const router = useRouter();
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   const { draftMeal, draftSlot, draftDate, setDraftSlot, removeFoodFromMeal, clearDraftMeal } =
     useMealStore();
   const goals = useUserStore((state) => state.goals);
@@ -139,7 +142,9 @@ export default function DraftMealScreen() {
               />
               {goals && leftover !== null ? (
                 <Text style={styles.left}>
-                  Leaves {leftover} kcal of your {goals.targetCalories} goal
+                  {leftover >= 0
+                    ? `Leaves ${leftover} kcal of your ${goals.targetCalories} goal`
+                    : `${Math.abs(leftover)} kcal over your ${goals.targetCalories} goal`}
                   {isTodayMs(draftDate) ? ' today' : ` for ${formatLogDate(draftDate)}`}
                 </Text>
               ) : null}
@@ -207,7 +212,7 @@ export default function DraftMealScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   empty: {
     flex: 1,
     justifyContent: 'center',

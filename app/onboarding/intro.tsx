@@ -5,9 +5,15 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { Chip, GlassCard, LogoMark, PrimaryButton, RaisedCard, Screen } from '@/components/ui';
 import { IconSquare } from '@/components/ui/IconSquare';
-import { colors } from '@/theme/colors';
+import { useTheme } from '@/hooks/useTheme';
+import type { ThemeColors } from '@/theme/palette';
 import { fonts } from '@/theme/fonts';
 import { inset, raiseSm } from '@/utils/shadow';
+
+const useIntroTheme = () => {
+  const { colors } = useTheme();
+  return { colors, styles: makeStyles(colors) };
+};
 
 const SLIDES = [
   {
@@ -22,12 +28,14 @@ const SLIDES = [
   },
   {
     title: 'Out of ideas?\nTry quick meals',
-    subtitle: 'Ideas that fit your calories left, and every day saved in Logs.',
+    subtitle: 'Ideas that fit the calories you have left. Add one to your current meal, then save it to Logs.',
     blobs: 'B2' as const,
   },
 ];
 
-const SearchVisual = () => (
+const SearchVisual = () => {
+  const { colors, styles } = useIntroTheme();
+  return (
   <View>
     <View style={[styles.searchFake, inset()]} accessible={false}>
       <Feather name="search" size={20} color={colors.muted} />
@@ -55,9 +63,12 @@ const SearchVisual = () => (
       <Chip label="Online search" />
     </View>
   </View>
-);
+  );
+};
 
-const MacroVisual = () => (
+const MacroVisual = () => {
+  const { colors, styles } = useIntroTheme();
+  return (
   <View>
     <GlassCard padding={12} radiusValue={28} style={styles.visualCard}>
       <View style={styles.macroRow}>
@@ -89,9 +100,12 @@ const MacroVisual = () => (
       </View>
     </RaisedCard>
   </View>
-);
+  );
+};
 
-const QuickVisual = () => (
+const QuickVisual = () => {
+  const { colors, styles } = useIntroTheme();
+  return (
   <View>
     <GlassCard padding={18} radiusValue={22} style={styles.quickHead}>
       <Text style={styles.foodName}>10 ideas for today</Text>
@@ -114,7 +128,8 @@ const QuickVisual = () => (
       </RaisedCard>
     ))}
   </View>
-);
+  );
+};
 
 export default function OnboardingIntro() {
   const router = useRouter();
@@ -123,6 +138,7 @@ export default function OnboardingIntro() {
   const scrollRef = useRef<ScrollView>(null);
   const [page, setPage] = useState(0);
   const slide = SLIDES[page] ?? SLIDES[0];
+  const { styles } = useIntroTheme();
 
   const goNext = () => {
     if (page < SLIDES.length - 1) {
@@ -179,7 +195,7 @@ export default function OnboardingIntro() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   top: {
     flexDirection: 'row',
     alignItems: 'center',
