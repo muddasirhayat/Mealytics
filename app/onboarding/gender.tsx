@@ -5,7 +5,8 @@ import { Feather } from '@expo/vector-icons';
 import { OnboardingShell } from '@/components/onboarding/OnboardingShell';
 import { useOnboardingStore } from '@/store/onboardingStore';
 import { safeBack } from '@/utils/navigation';
-import { colors } from '@/theme/colors';
+import { useTheme } from '@/hooks/useTheme';
+import type { ThemeColors } from '@/theme/palette';
 import { fonts } from '@/theme/fonts';
 import { inset, raise, raiseSm } from '@/utils/shadow';
 import type { Gender } from '@/types/user';
@@ -19,6 +20,8 @@ export default function OnboardingGender() {
   const router = useRouter();
   const gender = useOnboardingStore((s) => s.gender);
   const patch = useOnboardingStore((s) => s.patch);
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
 
   return (
     <OnboardingShell
@@ -28,7 +31,11 @@ export default function OnboardingGender() {
       blobs="B2"
       cta="Continue"
       onBack={() => safeBack('/onboarding')}
-      onContinue={() => router.push('/onboarding/age')}
+      continueDisabled={gender == null}
+      onContinue={() => {
+        if (gender == null) return;
+        router.push('/onboarding/age');
+      }}
     >
       <View style={styles.row}>
         {OPTIONS.map((option) => {
@@ -54,7 +61,7 @@ export default function OnboardingGender() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   row: {
     flexDirection: 'row',
     gap: 18,

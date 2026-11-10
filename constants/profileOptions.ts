@@ -27,14 +27,14 @@ export const ACTIVITY_OPTIONS: {
   {
     label: 'Moderately active',
     shortLabel: 'Moderate',
-    description: 'Exercise most days',
+    description: 'Exercise 3–5 days a week',
     value: 'moderate',
     icon: 'activity',
   },
   {
     label: 'Active',
     shortLabel: 'Active',
-    description: '3–5 workouts a week',
+    description: 'Hard exercise most days',
     value: 'active',
     icon: 'trending-up',
   },

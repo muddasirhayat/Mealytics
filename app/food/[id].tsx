@@ -22,7 +22,8 @@ import {
 import { useToast } from '@/components/ui/Toast';
 import { useMealStore } from '@/store/mealStore';
 import { FEATURES } from '@/constants/features';
-import { colors } from '@/theme/colors';
+import { useTheme } from '@/hooks/useTheme';
+import type { ThemeColors } from '@/theme/palette';
 import { fonts } from '@/theme/fonts';
 import { typography } from '@/theme/typography';
 import { createId } from '@/utils/id';
@@ -45,6 +46,8 @@ const sourceLabel = (food: Food) => {
 };
 
 export default function FoodDetailsScreen() {
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   const params = useLocalSearchParams<{
     id: string | string[];
     editDraftId?: string | string[];
@@ -279,7 +282,7 @@ export default function FoodDetailsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   scroll: {
     paddingBottom: 120,
     gap: 16,

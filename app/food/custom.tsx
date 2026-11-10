@@ -15,7 +15,8 @@ import { SERVING_UNIT_OPTIONS, toServingUnit, type ServingUnit } from '@/constan
 import { ConfirmDialog, InsetField, PrimaryButton, Screen, Segmented, TopBar } from '@/components/ui';
 import { useToast } from '@/components/ui/Toast';
 import { HIGH_CALORIE_CONFIRM, NUTRITION_MAX } from '@/constants/nutritionLimits';
-import { colors } from '@/theme/colors';
+import { useTheme } from '@/hooks/useTheme';
+import type { ThemeColors } from '@/theme/palette';
 import { fonts } from '@/theme/fonts';
 import { typography } from '@/theme/typography';
 
@@ -31,6 +32,8 @@ const first = (value?: string | string[]) => (Array.isArray(value) ? value[0] : 
 const fieldValue = (value?: number) => (value === undefined ? '' : String(value));
 
 export default function CustomFoodScreen() {
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   const params = useLocalSearchParams<{
     editDraftId?: string | string[];
     editMealId?: string | string[];
@@ -295,7 +298,7 @@ export default function CustomFoodScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   flex: { flex: 1 },
   content: {
     gap: 14,
