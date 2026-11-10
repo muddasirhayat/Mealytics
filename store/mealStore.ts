@@ -41,7 +41,14 @@ export const useMealStore = create<MealStore>()(
       draftDate: startOfDayMs(),
       setDraftSlot: (slot) => set({ draftSlot: slot }),
       setDraftDate: (dateMs) => set({ draftDate: clampDraftDate(dateMs) }),
-      logForToday: () => set({ draftDate: startOfDayMs() }),
+      logForToday: () =>
+        set((state) => {
+          const today = startOfDayMs();
+          if (state.draftMeal.length > 0 && state.draftDate !== today) {
+            return {};
+          }
+          return { draftDate: today };
+        }),
       addFoodToMeal: (food) =>
         set((state) => ({ draftMeal: [...state.draftMeal, food] })),
       updateFoodInMeal: (foodId, food) =>

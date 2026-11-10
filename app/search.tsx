@@ -121,6 +121,7 @@ export default function SearchScreen() {
   const { show } = useToast();
   const [recents, setRecents] = useState<string[]>([]);
   const [addedIds, setAddedIds] = useState<Set<string>>(() => new Set());
+  const addedDraftIds = useRef<Map<string, string>>(new Map());
   const firstMount = useRef(true);
   useEffect(() => {
     firstMount.current = false;
@@ -145,17 +146,33 @@ export default function SearchScreen() {
     [setQuery]
   );
 
+  const forgetAdded = useCallback((foodId: string, draftId: string) => {
+    removeFoodFromMeal(draftId);
+    addedDraftIds.current.delete(foodId);
+    setAddedIds((prev) => {
+      const next = new Set(prev);
+      next.delete(foodId);
+      return next;
+    });
+  }, [removeFoodFromMeal]);
+
   const quickAdd = useCallback(
     (food: Food) => {
+      const existingDraftId = addedDraftIds.current.get(food.id);
+      if (existingDraftId && addedIds.has(food.id)) {
+        forgetAdded(food.id, existingDraftId);
+        return;
+      }
       const item = { ...food, id: createId() };
       addFoodToMeal(item);
+      addedDraftIds.current.set(food.id, item.id);
       setAddedIds((prev) => new Set(prev).add(food.id));
       show(`Added ${food.name}`, {
         label: 'Undo',
-        onPress: () => removeFoodFromMeal(item.id),
+        onPress: () => forgetAdded(food.id, item.id),
       });
     },
-    [addFoodToMeal, removeFoodFromMeal, show]
+    [addFoodToMeal, addedIds, forgetAdded, show]
   );
 
   const openFood = useCallback(

@@ -41,6 +41,7 @@ export const searchOfflineFoods = (query: string): Food[] => {
 };
 
 export const searchRemoteFoods = async (query: string): Promise<Food[]> => {
+  let offFailed = false;
   try {
     const offFoods = await openFoodFactsApi.searchFoods(query);
     foodCache.putMany(offFoods);
@@ -48,6 +49,7 @@ export const searchRemoteFoods = async (query: string): Promise<Food[]> => {
       return offFoods;
     }
   } catch (offError) {
+    offFailed = true;
     logWarn('[food-search] Open Food Facts search failed', offError);
   }
 
@@ -55,13 +57,14 @@ export const searchRemoteFoods = async (query: string): Promise<Food[]> => {
     try {
       const usdaFoods = await searchUsdaFoods(query);
       foodCache.putMany(usdaFoods);
-      if (usdaFoods.length > 0) {
-        return usdaFoods;
-      }
+      return usdaFoods;
     } catch (usdaError) {
       disableUsda();
       logWarn('[food-search] USDA search failed; skipping USDA for 15 minutes', usdaError);
+      if (!offFailed) return [];
     }
+  } else if (!offFailed) {
+    return [];
   }
 
   throw new Error('Could not search foods. Check your connection and try again.');

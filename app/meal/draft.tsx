@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
@@ -43,6 +43,8 @@ export default function DraftMealScreen() {
   const goals = useUserStore((state) => state.goals);
   const { show } = useToast();
   const [loggedKcal, setLoggedKcal] = useState(0);
+  const [saving, setSaving] = useState(false);
+  const savingRef = useRef(false);
   const [pendingDelete, setPendingDelete] = useState<{ id: string; name: string } | null>(null);
 
   useFocusEffect(
@@ -76,7 +78,9 @@ export default function DraftMealScreen() {
     : null;
 
   const handleSave = async () => {
-    if (draftMeal.length === 0) return;
+    if (savingRef.current || draftMeal.length === 0) return;
+    savingRef.current = true;
+    setSaving(true);
     const loggingToday = isTodayMs(draftDate);
     const newMeal = {
       id: createId(),
@@ -102,6 +106,8 @@ export default function DraftMealScreen() {
     } else {
       show('Could not save');
     }
+    savingRef.current = false;
+    setSaving(false);
   };
 
   const handleRemove = (id: string, name: string) => {
@@ -177,7 +183,12 @@ export default function DraftMealScreen() {
             <Text style={styles.saveTo}>Save to</Text>
             <Segmented options={SLOTS} value={draftSlot} onChange={setDraftSlot} />
           </ScrollView>
-          <PrimaryButton label="✓ Save meal" onPress={() => void handleSave()} />
+          <PrimaryButton
+            label="✓ Save meal"
+            onPress={() => void handleSave()}
+            loading={saving}
+            disabled={saving}
+          />
         </>
       )}
       <ConfirmDialog
